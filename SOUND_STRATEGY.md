@@ -601,41 +601,88 @@ class SimpleSynth {
 
 ---
 
-## 7. 最終推奨決定
+## 7. 最終推奨決定（更新: Supabase Pro前提）
 
-### 採用案: 【ハイブリッド方式】
+### 採用案: 【Supabase Storage + ハイブリッド方式】
+
+**前提条件:**
+- Supabase Pro Plan ($25/月) 契約済み
+- 100GB ストレージ利用可能
+- 250GB/月 転送量
 
 **理由:**
-1. **MVPは無料**: 完全無料でスタート可能
-2. **段階的実装**: シンセから始めて、徐々にサンプル追加
-3. **音質とサイズのバランス**: 25MBで8楽器は十分
-4. **拡張性**: 将来Supabase Storageへ移行可能
+1. **高品質音源**: ファイルサイズ制限なし（100GB）
+2. **多数の楽器**: 20種類以上の楽器対応
+3. **柔軟な管理**: 音源の追加・更新がデプロイ不要
+4. **スケーラビリティ**: 将来のユーザー音源アップロードに対応
 
-**MVPの音源構成（最終形）:**
+**音源構成（最終形）:**
 ```
-合計: 約25MB
+Supabase Storage Bucket: "sound-library" (Public)
+合計: 約80-100GB（段階的に拡充）
 
-サンプル音源:
-- Piano (2MB, 20サンプル)
-- Acoustic Guitar (3MB, 15サンプル)
-- Bass (2MB, 12サンプル)
-- Drums (3MB, 8キット)
+Phase 1 (MVP): 約500MB
+├── piano/              (40MB, Full Sampling: 88音)
+│   ├── C0.mp3
+│   ├── C#0.mp3
+│   └── ... (88ファイル)
+│
+├── acoustic-guitar/    (30MB, Multi Sampling: 40音)
+├── electric-guitar/    (30MB, Multi Sampling: 40音)
+├── bass/              (25MB, Multi Sampling: 30音)
+├── drums/             (50MB, 各ドラム音)
+│   ├── kick/
+│   ├── snare/
+│   ├── hihat/
+│   ├── tom/
+│   └── cymbal/
+│
+├── strings/           (60MB, オーケストラ)
+│   ├── violin/
+│   ├── viola/
+│   ├── cello/
+│   └── double-bass/
+│
+├── brass/             (50MB)
+│   ├── trumpet/
+│   ├── trombone/
+│   └── french-horn/
+│
+├── synth/             (50MB, プリセットサンプル)
+│   ├── lead/
+│   ├── pad/
+│   ├── bass/
+│   └── pluck/
+│
+└── percussion/        (40MB)
+    ├── bongos/
+    ├── congas/
+    └── shaker/
 
-シンセ音源（コード実装）:
-- Synth Lead
-- Synth Pad
-- Synth Bass
-- Synth Pluck
++ Web Audio Oscillatorシンセ（コード実装、0MB）
+  - 4種類の基本波形
+  - カスタマイズ可能なADSR
 ```
 
 **音源取得元:**
-- Freesound.org (CC0 or CC BY)
-- Philharmonia Orchestra (CC BY-SA 3.0)
-- University of Iowa (教育利用）
+- **Philharmonia Orchestra**: オーケストラ楽器（CC BY-SA 3.0）
+- **Freesound.org**: ドラム、パーカッション（CC0/CC BY）
+- **University of Iowa**: ピアノ、ギター、ベース
+- **VSCO (Versilian Studios)**: 追加オーケストラ音源（CC0）
+- **GeneralUser GS SoundFont**: 一部楽器を抽出（フリーライセンス）
 
 **配置:**
-- public/sounds/ ディレクトリ
-- Vercel CDN経由で配信
+- Supabase Storage（メイン音源）
+- リポジトリ内（フォールバック用の軽量シンセのみ）
+
+**メリット:**
+- ✅ プロレベルの音質（Full Sampling可能）
+- ✅ 20種類以上の楽器
+- ✅ 音源の動的ロード（必要な楽器のみ読み込み）
+- ✅ 将来のユーザー音源アップロードに対応
+- ✅ リポジトリサイズが軽量
+
+**コスト:** $25/月（Supabase Pro）
 
 ---
 
@@ -668,7 +715,268 @@ Sound samples:
 
 ---
 
-## 9. 次のアクション
+## 10. Supabase Storage実装例
+
+### 10.1 音源のアップロード（初期セットアップ）
+
+```typescript
+// scripts/upload-sounds.ts
+import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // 管理者権限
+);
+
+async function uploadSounds() {
+  const soundsDir = './sounds'; // ローカルの音源ディレクトリ
+  const instruments = ['piano', 'guitar', 'drums', 'strings'];
+
+  for (const instrument of instruments) {
+    const instrumentDir = path.join(soundsDir, instrument);
+    const files = fs.readdirSync(instrumentDir);
+
+    for (const file of files) {
+      const filePath = path.join(instrumentDir, file);
+      const fileBuffer = fs.readFileSync(filePath);
+
+      const { data, error } = await supabase.storage
+        .from('sound-library')
+        .upload(`${instrument}/${file}`, fileBuffer, {
+          contentType: 'audio/mpeg',
+          upsert: true, // 既存ファイルを上書き
+        });
+
+      if (error) {
+        console.error(`Failed to upload ${file}:`, error);
+      } else {
+        console.log(`Uploaded: ${instrument}/${file}`);
+      }
+    }
+  }
+}
+
+uploadSounds();
+```
+
+### 10.2 音源の動的読み込み
+
+```typescript
+// lib/audio/SoundManager.ts
+import { createClient } from '@supabase/supabase-js';
+import * as Tone from 'tone';
+
+export class SoundManager {
+  private supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  private loadedSamplers = new Map<string, Tone.Sampler>();
+
+  // 楽器の音源URLリストを取得
+  async getInstrumentSamples(instrument: string): Promise<Record<string, string>> {
+    const { data, error } = await this.supabase.storage
+      .from('sound-library')
+      .list(instrument);
+
+    if (error) throw error;
+
+    const urls: Record<string, string> = {};
+
+    for (const file of data) {
+      const { data: urlData } = this.supabase.storage
+        .from('sound-library')
+        .getPublicUrl(`${instrument}/${file.name}`);
+
+      // ファイル名から音程を抽出（例: C4.mp3 → C4）
+      const noteName = file.name.replace('.mp3', '');
+      urls[noteName] = urlData.publicUrl;
+    }
+
+    return urls;
+  }
+
+  // サンプラーをロード
+  async loadInstrument(instrument: string): Promise<Tone.Sampler> {
+    // すでにロード済みならキャッシュから返す
+    if (this.loadedSamplers.has(instrument)) {
+      return this.loadedSamplers.get(instrument)!;
+    }
+
+    const urls = await this.getInstrumentSamples(instrument);
+
+    return new Promise((resolve, reject) => {
+      const sampler = new Tone.Sampler({
+        urls: urls,
+        onload: () => {
+          this.loadedSamplers.set(instrument, sampler);
+          console.log(`${instrument} loaded successfully`);
+          resolve(sampler);
+        },
+        onerror: (error) => {
+          console.error(`Failed to load ${instrument}:`, error);
+          reject(error);
+        }
+      }).toDestination();
+    });
+  }
+
+  // 楽器の事前ロード
+  async preloadInstruments(instruments: string[]): Promise<void> {
+    console.log('Preloading instruments:', instruments);
+
+    const promises = instruments.map(inst => this.loadInstrument(inst));
+
+    await Promise.all(promises);
+
+    console.log('All instruments loaded');
+  }
+
+  // ロード済み楽器の取得
+  getLoadedInstrument(instrument: string): Tone.Sampler | null {
+    return this.loadedSamplers.get(instrument) || null;
+  }
+}
+
+// シングルトンインスタンス
+export const soundManager = new SoundManager();
+```
+
+### 10.3 プログレッシブローディング（最適化）
+
+```typescript
+// lib/audio/ProgressiveLoader.ts
+export class ProgressiveLoader {
+  private loadQueue: string[] = [];
+  private loadedInstruments = new Set<string>();
+
+  // 優先度付きロード
+  async loadWithPriority(
+    highPriority: string[],  // すぐに使う楽器
+    lowPriority: string[]    // 後で使うかもしれない楽器
+  ) {
+    // 高優先度を先にロード
+    for (const instrument of highPriority) {
+      await soundManager.loadInstrument(instrument);
+      this.loadedInstruments.add(instrument);
+    }
+
+    // 低優先度はバックグラウンドでロード
+    setTimeout(() => {
+      this.loadInBackground(lowPriority);
+    }, 2000);
+  }
+
+  // バックグラウンドロード
+  private async loadInBackground(instruments: string[]) {
+    for (const instrument of instruments) {
+      if (!this.loadedInstruments.has(instrument)) {
+        await soundManager.loadInstrument(instrument);
+        this.loadedInstruments.add(instrument);
+
+        // ユーザー操作を妨げないよう、少し待つ
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+  }
+}
+```
+
+### 10.4 使用例（エディタページ）
+
+```typescript
+// app/editor/[projectId]/page.tsx
+'use client';
+
+import { useEffect, useState } from 'react';
+import { soundManager } from '@/lib/audio/SoundManager';
+
+export default function EditorPage() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadProgress, setLoadProgress] = useState(0);
+
+  useEffect(() => {
+    async function initAudio() {
+      try {
+        // 基本楽器を事前ロード
+        const basicInstruments = ['piano', 'drums', 'bass'];
+
+        await soundManager.preloadInstruments(basicInstruments);
+
+        setLoadProgress(100);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Failed to load instruments:', error);
+        // フォールバック: Web Audio Oscillatorを使用
+      }
+    }
+
+    initAudio();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div>
+          <p>Loading sounds... {loadProgress}%</p>
+          <div className="w-64 h-2 bg-gray-200 rounded">
+            <div
+              className="h-full bg-blue-500 rounded"
+              style={{ width: `${loadProgress}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* エディタUI */}
+    </div>
+  );
+}
+```
+
+---
+
+## 11. パフォーマンス最適化戦略
+
+### 11.1 遅延ロード（Lazy Loading）
+
+- **必要な楽器のみロード**: プロジェクトで使用する楽器だけを読み込む
+- **オンデマンドロード**: トラック追加時に楽器をロード
+
+### 11.2 キャッシング戦略
+
+```typescript
+// Service Worker（PWA対応）
+self.addEventListener('fetch', (event) => {
+  if (event.request.url.includes('sound-library')) {
+    event.respondWith(
+      caches.open('audio-cache').then((cache) => {
+        return cache.match(event.request).then((response) => {
+          return response || fetch(event.request).then((response) => {
+            cache.put(event.request, response.clone());
+            return response;
+          });
+        });
+      })
+    );
+  }
+});
+```
+
+### 11.3 CDNの活用
+
+Supabase StorageはCloudflare CDNを使用しているため、自動的にエッジキャッシュされる。
+
+---
+
+## 12. 次のアクション
 
 ### 明日のタスク
 - [ ] 音源戦略の最終決定（このドキュメントをレビュー）
