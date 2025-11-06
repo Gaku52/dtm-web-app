@@ -75,6 +75,18 @@
 | [UI_DESIGN.md](./UI_DESIGN.md) | UI/UX design guide (100+ components) |
 | [SOUND_STRATEGY.md](./SOUND_STRATEGY.md) | Audio implementation strategy |
 | [DEVELOPMENT.md](./DEVELOPMENT.md) | Development workflow and coding standards |
+| [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md) | Current project status (living document) |
+| [docs/AUTO_LOG_SYSTEM.md](./docs/AUTO_LOG_SYSTEM.md) | Automatic conversation log system |
+
+### 🤖 Automatic Logging System
+
+This project features an **automatic conversation log system** that:
+- 📝 Automatically records all development sessions
+- 🔄 Maintains context across sessions
+- 📊 Tracks decisions and progress
+- 🎯 Ensures development continuity
+
+See [docs/AUTO_LOG_SYSTEM.md](./docs/AUTO_LOG_SYSTEM.md) for details.
 
 ---
 
