@@ -13,8 +13,22 @@ export default function Home() {
 
         <div className="flex flex-col gap-4 max-w-md mx-auto">
           <Link
+            href="/auth/login"
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center font-semibold"
+          >
+            ログイン
+          </Link>
+
+          <Link
+            href="/auth/signup"
+            className="px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors text-center font-semibold"
+          >
+            新規登録
+          </Link>
+
+          <Link
             href="/test"
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center"
+            className="px-6 py-3 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-center"
           >
             Supabase接続テスト
           </Link>
@@ -23,11 +37,11 @@ export default function Home() {
             <h2 className="text-xl font-bold mb-4">✅ セットアップ完了</h2>
             <ul className="space-y-2 text-sm">
               <li>✅ Next.js 15</li>
-              <li>✅ Supabase Pro</li>
+              <li>✅ Supabase Auth</li>
               <li>✅ データベース（7テーブル）</li>
               <li>✅ Row Level Security</li>
               <li>✅ Storage（2バケット）</li>
-              <li>✅ コスト制限設定</li>
+              <li>✅ カスタムドメイン（dtm.ogadix.com）</li>
             </ul>
           </div>
         </div>
