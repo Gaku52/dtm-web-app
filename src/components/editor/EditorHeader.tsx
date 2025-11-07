@@ -1,0 +1,115 @@
+'use client'
+
+import { useState } from 'react'
+
+interface EditorHeaderProps {
+  projectName: string
+  onProjectNameChange: (name: string) => void
+  onBack: () => void
+  onSave: () => void
+}
+
+export default function EditorHeader({
+  projectName,
+  onProjectNameChange,
+  onBack,
+  onSave,
+}: EditorHeaderProps) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [name, setName] = useState(projectName)
+
+  const handleSave = () => {
+    if (name.trim() && name !== projectName) {
+      onProjectNameChange(name.trim())
+    }
+    setIsEditing(false)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave()
+    } else if (e.key === 'Escape') {
+      setName(projectName)
+      setIsEditing(false)
+    }
+  }
+
+  return (
+    <header className="h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-6">
+      <div className="flex items-center gap-4">
+        {/* Back Button */}
+        <button
+          onClick={onBack}
+          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+          title="ダッシュボードに戻る"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
+          </svg>
+        </button>
+
+        {/* Logo */}
+        <div className="text-xl font-bold">DTM</div>
+
+        {/* Project Name */}
+        {isEditing ? (
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={handleKeyDown}
+            className="px-3 py-1 bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:border-blue-500"
+            autoFocus
+          />
+        ) : (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="px-3 py-1 hover:bg-gray-700 rounded transition-colors"
+          >
+            <span className="text-lg font-semibold">{projectName}</span>
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center gap-3">
+        {/* Auto-save indicator */}
+        <div className="text-sm text-gray-400 flex items-center gap-2">
+          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+          自動保存済み
+        </div>
+
+        {/* Save Button */}
+        <button
+          onClick={onSave}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+            />
+          </svg>
+          保存
+        </button>
+      </div>
+    </header>
+  )
+}
