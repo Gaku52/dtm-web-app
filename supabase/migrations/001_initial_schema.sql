@@ -2,8 +2,8 @@
 -- Created: 2025-11-06
 -- Description: Creates all tables for the DTM application
 
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Enable pgcrypto extension for gen_random_uuid()
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ============================================================
 -- USERS TABLE (extends Supabase Auth)
@@ -26,7 +26,7 @@ CREATE INDEX idx_users_email ON public.users(email);
 -- PROJECTS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.projects (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
@@ -51,7 +51,7 @@ CREATE INDEX idx_projects_public ON public.projects(is_public) WHERE is_public =
 -- TRACKS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.tracks (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   instrument TEXT NOT NULL,
@@ -76,7 +76,7 @@ CREATE INDEX idx_tracks_order ON public.tracks(project_id, order_index);
 -- NOTES TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.notes (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   track_id UUID NOT NULL REFERENCES public.tracks(id) ON DELETE CASCADE,
   pitch INTEGER NOT NULL CHECK (pitch >= 0 AND pitch <= 127),
   start_time FLOAT NOT NULL CHECK (start_time >= 0),
@@ -94,7 +94,7 @@ CREATE INDEX idx_notes_time_range ON public.notes(track_id, start_time, duration
 -- PROJECT SNAPSHOTS TABLE (for auto-save / version history)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.project_snapshots (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
   snapshot_data JSONB NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -107,7 +107,7 @@ CREATE INDEX idx_snapshots_project ON public.project_snapshots(project_id, creat
 -- EFFECTS TABLE (for track effects chain)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.effects (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   track_id UUID NOT NULL REFERENCES public.tracks(id) ON DELETE CASCADE,
   effect_type TEXT NOT NULL, -- 'reverb', 'delay', 'compressor', etc.
   order_index INTEGER NOT NULL,
@@ -123,7 +123,7 @@ CREATE INDEX idx_effects_track_id ON public.effects(track_id, order_index);
 -- AUTOMATION TABLE (for parameter automation - v2 feature)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.automation (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   track_id UUID NOT NULL REFERENCES public.tracks(id) ON DELETE CASCADE,
   parameter TEXT NOT NULL, -- 'volume', 'pan', 'effect.reverb.wet', etc.
   time FLOAT NOT NULL CHECK (time >= 0),
