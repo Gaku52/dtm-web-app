@@ -24,11 +24,17 @@ export async function GET(request: Request) {
       userId: data.user?.id,
       email: data.user?.email,
     })
+
+    // セッション確立成功時、Cookieを適切に設定してリダイレクト
+    const redirectUrl = new URL('/dashboard', requestUrl.origin)
+    const response = NextResponse.redirect(redirectUrl)
+
+    return response
   } else {
     console.warn('[Auth Callback] No code parameter found')
   }
 
-  // ダッシュボードにリダイレクト
-  console.log('[Auth Callback] Redirecting to dashboard')
-  return NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
+  // codeがない場合はログインページへ
+  console.log('[Auth Callback] No code found, redirecting to login')
+  return NextResponse.redirect(new URL('/auth/login', requestUrl.origin))
 }

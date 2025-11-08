@@ -58,6 +58,11 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // 認証コールバックはスキップ
+  if (request.nextUrl.pathname === '/auth/callback') {
+    return response
+  }
+
   // 認証が必要なページ
   const protectedPaths = ['/dashboard', '/editor']
   const isProtectedPath = protectedPaths.some((path) =>
