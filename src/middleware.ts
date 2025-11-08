@@ -58,15 +58,8 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  console.log('[Middleware]', {
-    path: request.nextUrl.pathname,
-    hasUser: !!user,
-    userEmail: user?.email,
-  })
-
   // 認証コールバックはスキップ
   if (request.nextUrl.pathname === '/auth/callback') {
-    console.log('[Middleware] Skipping auth callback')
     return response
   }
 
@@ -84,13 +77,11 @@ export async function middleware(request: NextRequest) {
 
   // 保護されたページで未認証の場合、ログインページにリダイレクト
   if (isProtectedPath && !user) {
-    console.log('[Middleware] Redirecting to login: protected page without auth')
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
   // 認証済みで認証ページにアクセスした場合、ダッシュボードにリダイレクト
   if (isAuthPath && user) {
-    console.log('[Middleware] Redirecting to dashboard: auth page with existing session')
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

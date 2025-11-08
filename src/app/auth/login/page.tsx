@@ -27,28 +27,13 @@ function LoginForm() {
     setError(null)
     setLoading(true)
 
-    try {
-      console.log('[LoginPage] Starting login process')
-      alert('ログイン処理を開始します') // デバッグ用
+    const { error } = await signIn(email, password)
 
-      const { error } = await signIn(email, password)
-      console.log('[LoginPage] Login result:', { error: error?.message })
-
-      if (error) {
-        console.error('[LoginPage] Login failed:', error.message)
-        alert(`ログイン失敗: ${error.message}`) // デバッグ用
-        setError(error.message)
-        setLoading(false)
-      } else {
-        console.log('[LoginPage] Login successful, redirecting to dashboard')
-        alert('ログイン成功! ダッシュボードに移動します') // デバッグ用
-        router.push('/dashboard')
-      }
-    } catch (err) {
-      console.error('[LoginPage] Exception:', err)
-      alert(`エラーが発生しました: ${err}`) // デバッグ用
-      setError('予期しないエラーが発生しました')
+    if (error) {
+      setError(error.message)
       setLoading(false)
+    } else {
+      router.push('/dashboard')
     }
   }
 
