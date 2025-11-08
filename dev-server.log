@@ -1,0 +1,17 @@
+
+> dtm-web-app@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.5.6
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.3.112:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1064ms
+ ✓ Compiled /middleware in 237ms (198 modules)
+ ○ Compiling /auth/login ...
+ ✓ Compiled /auth/login in 960ms (750 modules)
+ GET /auth/login 200 in 1142ms
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (125kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled in 102ms (313 modules)
