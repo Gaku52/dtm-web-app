@@ -27,12 +27,16 @@ function LoginForm() {
     setError(null)
     setLoading(true)
 
+    console.log('[LoginPage] Starting login process')
     const { error } = await signIn(email, password)
+    console.log('[LoginPage] Login result:', { error: error?.message })
 
     if (error) {
+      console.error('[LoginPage] Login failed:', error.message)
       setError(error.message)
       setLoading(false)
     } else {
+      console.log('[LoginPage] Login successful, redirecting to dashboard')
       router.push('/dashboard')
     }
   }

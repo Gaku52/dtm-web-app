@@ -15,3 +15,50 @@
  GET /auth/login 200 in 1142ms
 <w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (125kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
  ✓ Compiled in 102ms (313 modules)
+ ✓ Compiled in 61ms (313 modules)
+ ✓ Compiled in 35ms (198 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (125kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled in 73ms (313 modules)
+ ✓ Compiled in 50ms (313 modules)
+ ✓ Compiled /auth/login in 57ms (437 modules)
+ ⨯ Error: Could not find the module "/Users/gaku/dtm-web-app/node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js#SegmentViewNode" in the React Client Manifest. This is probably a bug in the React Server Components bundler.
+    at stringify (<anonymous>) {
+  digest: '11297375'
+}
+ ⨯ Error: Could not find the module "/Users/gaku/dtm-web-app/node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js#SegmentViewNode" in the React Client Manifest. This is probably a bug in the React Server Components bundler.
+    at stringify (<anonymous>)
+    at stringify (<anonymous>) {
+  digest: '2049693471'
+}
+ ⨯ Error: Could not find the module "/Users/gaku/dtm-web-app/node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js#SegmentViewNode" in the React Client Manifest. This is probably a bug in the React Server Components bundler.
+    at stringify (<anonymous>)
+    at stringify (<anonymous>) {
+  digest: '2049693471'
+}
+ ⨯ Error: Could not find the module "/Users/gaku/dtm-web-app/node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js#SegmentViewNode" in the React Client Manifest. This is probably a bug in the React Server Components bundler.
+    at stringify (<anonymous>)
+    at stringify (<anonymous>) {
+  digest: '2049693471'
+}
+ ⨯ Error: Could not find the module "/Users/gaku/dtm-web-app/node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js#SegmentViewNode" in the React Client Manifest. This is probably a bug in the React Server Components bundler.
+    at stringify (<anonymous>) {
+  digest: '11297375'
+}
+ ⨯ Error: Could not find the module "/Users/gaku/dtm-web-app/node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js#SegmentViewNode" in the React Client Manifest. This is probably a bug in the React Server Components bundler.
+    at stringify (<anonymous>) {
+  digest: '11297375'
+}
+ ⨯ [TypeError: __webpack_modules__[moduleId] is not a function] {
+  digest: '3577285364'
+}
+ ⨯ Error: Could not find the module "/Users/gaku/dtm-web-app/node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js#SegmentViewNode" in the React Client Manifest. This is probably a bug in the React Server Components bundler.
+    at stringify (<anonymous>) {
+  digest: '11297375'
+}
+[TypeError: __webpack_modules__[moduleId] is not a function]
+ ⨯ [TypeError: __webpack_modules__[moduleId] is not a function]
+ ⨯ [TypeError: __webpack_modules__[moduleId] is not a function] {
+  page: '/auth/login'
+}
+ ✓ Compiled /_error in 439ms (1076 modules)
+ GET /auth/login 500 in 1580ms
