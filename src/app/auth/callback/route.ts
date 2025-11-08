@@ -7,7 +7,13 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient()
-    await supabase.auth.exchangeCodeForSession(code)
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (error) {
+      // セッション確立に失敗した場合、ログインページにリダイレクト
+      console.error('Error exchanging code for session:', error)
+      return NextResponse.redirect(new URL('/auth/login?error=セッションの確立に失敗しました', requestUrl.origin))
+    }
   }
 
   // ダッシュボードにリダイレクト
