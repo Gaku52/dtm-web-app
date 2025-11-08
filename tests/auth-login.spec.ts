@@ -37,8 +37,7 @@ test.describe('認証フロー', () => {
     await page.click('button[type="submit"]');
 
     // エラーメッセージが表示されることを確認
-    await expect(page.locator('.bg-red-900')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('.bg-red-900')).toContainText('Invalid login credentials');
+    await expect(page.locator('text=Invalid login credentials')).toBeVisible({ timeout: 5000 });
 
     // ログインページに留まることを確認
     await expect(page).toHaveURL('http://localhost:3000/auth/login');
