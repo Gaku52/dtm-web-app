@@ -46,6 +46,8 @@ export default function TrackList({
 }: TrackListProps) {
   const [tracks, setTracks] = useState<Track[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedTrackType, setSelectedTrackType] = useState<TrackType>('piano')
+  const [trackToDelete, setTrackToDelete] = useState<string | null>(null)
 
   useEffect(() => {
     loadTracks()
@@ -75,20 +77,18 @@ export default function TrackList({
 
   const addTrack = async () => {
     try {
-      // 既存のトラックタイプをカウントして、次のトラックタイプを決定
-      const trackTypeOrder: TrackType[] = ['vocal', 'bass', 'drums', 'guitar', 'piano', 'synth']
-      const nextTypeIndex = tracks.length % trackTypeOrder.length
-      const trackType = trackTypeOrder[nextTypeIndex]
-      const config = TRACK_TYPE_CONFIG[trackType]
+      const config = TRACK_TYPE_CONFIG[selectedTrackType]
+      // 同じタイプのトラック数をカウント
+      const sameTypeCount = tracks.filter(t => t.track_type === selectedTrackType).length
 
       const { data, error} = await supabase
         .from('tracks')
         .insert([
           {
             project_id: projectId,
-            name: `${config.label} ${Math.floor(tracks.length / trackTypeOrder.length) + 1}`,
-            instrument: trackType,
-            track_type: trackType,
+            name: `${config.label} ${sameTypeCount + 1}`,
+            instrument: selectedTrackType,
+            track_type: selectedTrackType,
             icon: config.icon,
             color: config.defaultColor,
             volume: 80,
@@ -107,6 +107,40 @@ export default function TrackList({
       }
     } catch (error) {
       console.error('Error adding track:', error)
+    }
+  }
+
+  const deleteTrack = async (trackId: string) => {
+    try {
+      // ノートも一緒に削除
+      const { error: notesError } = await supabase
+        .from('notes')
+        .delete()
+        .eq('track_id', trackId)
+
+      if (notesError) throw notesError
+
+      const { error } = await supabase
+        .from('tracks')
+        .delete()
+        .eq('id', trackId)
+
+      if (error) throw error
+
+      setTracks(tracks.filter((t) => t.id !== trackId))
+
+      // 削除したトラックが選択されていた場合、選択を解除または別のトラックを選択
+      if (selectedTrackId === trackId) {
+        const remaining = tracks.filter((t) => t.id !== trackId)
+        if (remaining.length > 0) {
+          onSelectTrack(remaining[0].id)
+        }
+      }
+
+      setTrackToDelete(null)
+    } catch (error) {
+      console.error('Error deleting track:', error)
+      setTrackToDelete(null)
     }
   }
 
@@ -163,6 +197,17 @@ export default function TrackList({
       {/* Header */}
       <div className="p-3 border-b border-gray-700">
         <h3 className="text-xs font-semibold text-gray-300 mb-2">トラック</h3>
+        <select
+          value={selectedTrackType}
+          onChange={(e) => setSelectedTrackType(e.target.value as TrackType)}
+          className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-xs mb-2 focus:outline-none focus:border-blue-500"
+        >
+          {(Object.keys(TRACK_TYPE_CONFIG) as TrackType[]).map((type) => (
+            <option key={type} value={type}>
+              {TRACK_TYPE_CONFIG[type].icon} {TRACK_TYPE_CONFIG[type].label}
+            </option>
+          ))}
+        </select>
         <button
           onClick={addTrack}
           className="w-full px-2 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-xs flex items-center justify-center gap-1 transition-colors"
@@ -206,6 +251,19 @@ export default function TrackList({
                     className="w-2 h-2 rounded-full flex-shrink-0"
                     style={{ backgroundColor: track.color }}
                   ></div>
+                  {/* Delete Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setTrackToDelete(track.id)
+                    }}
+                    className="flex-shrink-0 p-0.5 hover:bg-red-600 rounded transition-colors"
+                    title="トラックを削除"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
               </div>
 
@@ -249,6 +307,32 @@ export default function TrackList({
           ))
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {trackToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-4 max-w-sm mx-4 border border-gray-700">
+            <h3 className="text-sm font-semibold text-white mb-2">トラックを削除</h3>
+            <p className="text-xs text-gray-300 mb-4">
+              このトラックと、このトラックに含まれるすべてのノートが削除されます。この操作は取り消せません。
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setTrackToDelete(null)}
+                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={() => trackToDelete && deleteTrack(trackToDelete)}
+                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded text-xs transition-colors"
+              >
+                削除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
