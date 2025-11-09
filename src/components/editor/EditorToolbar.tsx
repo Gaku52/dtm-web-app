@@ -31,16 +31,16 @@ export default function EditorToolbar({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`
   }
   return (
-    <div className="h-14 bg-gray-800 border-b border-gray-700 flex items-center px-6 gap-6">
+    <div className="h-10 bg-gray-800 border-b border-gray-700 flex items-center px-3 gap-3">
       {/* Transport Controls */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         {/* Stop */}
         <button
           onClick={onStop}
-          className="p-2 hover:bg-gray-700 rounded transition-colors"
+          className="p-1.5 hover:bg-gray-700 rounded transition-colors"
           title="停止"
         >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
             <rect x="6" y="6" width="12" height="12" />
           </svg>
         </button>
@@ -49,10 +49,10 @@ export default function EditorToolbar({
         {isPlaying ? (
           <button
             onClick={onPause}
-            className="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+            className="p-1.5 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
             title="一時停止"
           >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <rect x="6" y="5" width="4" height="14" />
               <rect x="14" y="5" width="4" height="14" />
             </svg>
@@ -60,30 +60,30 @@ export default function EditorToolbar({
         ) : (
           <button
             onClick={onPlay}
-            className="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+            className="p-1.5 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
             title="再生"
           >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M8 5v14l11-7z" />
             </svg>
           </button>
         )}
       </div>
 
-      <div className="w-px h-8 bg-gray-700"></div>
+      <div className="w-px h-6 bg-gray-700"></div>
 
       {/* Tempo */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <button
           onClick={() => onTempoChange(Math.max(40, tempo - 0.1))}
-          className="p-1 hover:bg-gray-700 rounded"
+          className="p-0.5 hover:bg-gray-700 rounded"
           title="BPMを0.1下げる"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
           </svg>
         </button>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <input
             type="number"
             value={tempo}
@@ -94,31 +94,31 @@ export default function EditorToolbar({
               }
             }}
             step="0.1"
-            className="w-20 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-center text-sm focus:outline-none focus:border-blue-500"
+            className="w-16 px-1.5 py-0.5 bg-gray-700 border border-gray-600 rounded text-center text-xs focus:outline-none focus:border-blue-500"
             min="40"
             max="300"
           />
-          <span className="text-sm text-gray-400">BPM</span>
+          <span className="text-xs text-gray-400">BPM</span>
         </div>
         <button
           onClick={() => onTempoChange(Math.min(300, tempo + 0.1))}
-          className="p-1 hover:bg-gray-700 rounded"
+          className="p-0.5 hover:bg-gray-700 rounded"
           title="BPMを0.1上げる"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
         </button>
       </div>
 
-      <div className="w-px h-8 bg-gray-700"></div>
+      <div className="w-px h-6 bg-gray-700"></div>
 
       {/* Time Signature */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <select
           value={timeSignature}
           onChange={(e) => onTimeSignatureChange(e.target.value)}
-          className="px-3 py-1 bg-gray-700 border border-gray-600 rounded text-sm focus:outline-none focus:border-blue-500"
+          className="px-2 py-0.5 bg-gray-700 border border-gray-600 rounded text-xs focus:outline-none focus:border-blue-500"
         >
           <option value="4/4">4/4</option>
           <option value="3/4">3/4</option>
@@ -132,7 +132,7 @@ export default function EditorToolbar({
       <div className="flex-1"></div>
 
       {/* Info */}
-      <div className="text-sm text-gray-400 font-mono">
+      <div className="text-xs text-gray-400 font-mono">
         {formatTime(currentTime)}
       </div>
     </div>

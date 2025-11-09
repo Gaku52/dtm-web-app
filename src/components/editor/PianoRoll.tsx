@@ -350,57 +350,57 @@ export default function PianoRoll({
   return (
     <div className="flex-1 bg-gray-900 flex flex-col overflow-hidden">
       {/* Piano Roll Header */}
-      <div className="h-10 bg-gray-800 border-b border-gray-700 flex items-center px-4 gap-4">
-        <div className="w-16"></div> {/* Piano keyboard width spacer */}
+      <div className="h-7 bg-gray-800 border-b border-gray-700 flex items-center px-2 gap-2 text-xs">
+        <div className="w-12"></div> {/* Piano keyboard width spacer */}
 
         {/* Zoom Controls */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-400">横:</span>
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-gray-400">横</span>
           <button
             onClick={() => setHorizontalZoom(Math.max(0.25, horizontalZoom - 0.25))}
-            className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+            className="px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 rounded text-[10px]"
             title="横方向を縮小"
           >
             -
           </button>
-          <span className="text-xs text-gray-300 w-12 text-center">{Math.round(horizontalZoom * 100)}%</span>
+          <span className="text-[10px] text-gray-300 w-10 text-center">{Math.round(horizontalZoom * 100)}%</span>
           <button
             onClick={() => setHorizontalZoom(Math.min(4, horizontalZoom + 0.25))}
-            className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+            className="px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 rounded text-[10px]"
             title="横方向を拡大"
           >
             +
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-400">縦:</span>
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-gray-400">縦</span>
           <button
             onClick={() => setVerticalZoom(Math.max(0.25, verticalZoom - 0.25))}
-            className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+            className="px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 rounded text-[10px]"
             title="縦方向を縮小"
           >
             -
           </button>
-          <span className="text-xs text-gray-300 w-12 text-center">{Math.round(verticalZoom * 100)}%</span>
+          <span className="text-[10px] text-gray-300 w-10 text-center">{Math.round(verticalZoom * 100)}%</span>
           <button
             onClick={() => setVerticalZoom(Math.min(4, verticalZoom + 0.25))}
-            className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+            className="px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 rounded text-[10px]"
             title="縦方向を拡大"
           >
             +
           </button>
         </div>
 
-        <div className="text-sm text-gray-400">
-          左クリック: ノート追加 | 右クリック: ノート削除 | 64分音符単位でスナップ
+        <div className="text-[10px] text-gray-500">
+          L:追加 R:削除
         </div>
       </div>
 
       {/* Piano Roll with Keyboard */}
       <div className="flex-1 flex overflow-hidden">
         {/* Piano Keyboard */}
-        <div className="w-16 bg-gray-800 border-r border-gray-700 flex-shrink-0 overflow-hidden">
+        <div className="w-12 bg-gray-800 border-r border-gray-700 flex-shrink-0 overflow-hidden">
           <div style={{ height: `${TOTAL_NOTES * NOTE_HEIGHT * verticalZoom}px` }}>
             {Array.from({ length: TOTAL_NOTES }).map((_, i) => {
               const midiNote = LOWEST_NOTE + (TOTAL_NOTES - i - 1)
@@ -411,7 +411,7 @@ export default function PianoRoll({
               return (
                 <div
                   key={i}
-                  className={`flex items-center justify-center text-xs border-b border-gray-700 ${
+                  className={`flex items-center justify-center border-b border-gray-700 ${
                     isWhiteKey ? 'bg-gray-700 text-gray-300' : 'bg-gray-900 text-gray-500'
                   }`}
                   style={{
@@ -420,7 +420,7 @@ export default function PianoRoll({
                   }}
                   title={noteName}
                 >
-                  {isC && <span className="text-[10px]">{noteName}</span>}
+                  {isC && <span className="text-[8px]">{noteName}</span>}
                 </div>
               )
             })}
