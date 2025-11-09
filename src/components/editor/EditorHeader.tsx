@@ -1,16 +1,21 @@
 'use client'
 
 import { useState } from 'react'
+import ExportButton from './ExportButton'
 
 interface EditorHeaderProps {
+  projectId: string
   projectName: string
+  tempo: number
   onProjectNameChange: (name: string) => void
   onBack: () => void
   onSave: () => void
 }
 
 export default function EditorHeader({
+  projectId,
   projectName,
+  tempo,
   onProjectNameChange,
   onBack,
   onSave,
@@ -88,6 +93,9 @@ export default function EditorHeader({
           <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
           自動保存済み
         </div>
+
+        {/* Export Button */}
+        <ExportButton projectId={projectId} projectName={projectName} tempo={tempo} />
 
         {/* Save Button */}
         <button

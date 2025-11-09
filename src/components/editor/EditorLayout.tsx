@@ -113,7 +113,9 @@ export default function EditorLayout({
     <div className="h-screen flex flex-col bg-gray-900 text-white overflow-hidden">
       {/* Header */}
       <EditorHeader
+        projectId={project.id}
         projectName={project.name}
+        tempo={project.tempo}
         onProjectNameChange={(name) => onUpdateProject({ name })}
         onBack={onBack}
         onSave={() => {
