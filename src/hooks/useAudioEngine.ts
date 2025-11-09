@@ -11,7 +11,7 @@ interface Note {
   track_id?: string
 }
 
-type InstrumentType = 'piano' | 'synth' | 'bass' | 'drums' | 'guitar' | 'strings' | 'brass' | 'woodwind' | 'vocal' | 'percussion' | 'fx' | 'instrument'
+export type InstrumentType = 'piano' | 'synth' | 'bass' | 'drums' | 'guitar' | 'strings' | 'brass' | 'woodwind' | 'vocal' | 'percussion' | 'fx' | 'instrument'
 
 // 楽器タイプごとの音色設定
 const INSTRUMENT_CONFIGS: Record<InstrumentType, {

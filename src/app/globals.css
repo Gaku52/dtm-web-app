@@ -1,3 +1,33 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Safari fullscreen and responsive optimizations */
+@layer base {
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    position: fixed;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Safari-specific viewport fixes */
+  @supports (-webkit-touch-callout: none) {
+    html {
+      height: -webkit-fill-available;
+    }
+    body {
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+  }
+
+  /* Prevent zoom on double-tap in Safari */
+  * {
+    touch-action: manipulation;
+  }
+}

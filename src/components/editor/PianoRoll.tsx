@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import type { InstrumentType } from '@/hooks/useAudioEngine'
 
 interface Note {
   id: string
@@ -19,8 +20,8 @@ interface PianoRollProps {
   isPlaying: boolean
   tempo?: number
   timeSignature?: string
-  instrumentType?: string
-  onPlayNote?: (pitch: number, duration?: number, velocity?: number, instrumentType?: string) => Promise<void>
+  instrumentType?: InstrumentType
+  onPlayNote?: (pitch: number, duration?: number, velocity?: number, instrumentType?: InstrumentType) => Promise<void>
 }
 
 // Grid constants
@@ -40,6 +41,8 @@ export default function PianoRoll({
   onPlayNote,
 }: PianoRollProps) {
   const [notes, setNotes] = useState<Note[]>([])
+  const [horizontalZoom, setHorizontalZoom] = useState(1) // 1.0 = 100%
+  const [verticalZoom, setVerticalZoom] = useState(1) // 1.0 = 100%
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -50,7 +53,7 @@ export default function PianoRoll({
 
   useEffect(() => {
     drawPianoRoll()
-  }, [notes, currentTime])
+  }, [notes, currentTime, horizontalZoom, verticalZoom])
 
   const loadNotes = async () => {
     if (!selectedTrackId) return
@@ -83,15 +86,19 @@ export default function PianoRoll({
     ctx.fillStyle = '#1F2937'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
+    // ズーム適用後のサイズ
+    const scaledPixelsPerBeat = PIXELS_PER_BEAT * horizontalZoom
+    const scaledNoteHeight = NOTE_HEIGHT * verticalZoom
+
     // 拍子を解析 (例: "4/4" -> beatsPerMeasure=4)
     const [beatsPerMeasure] = timeSignature.split('/').map(Number)
-    const pixelsPerMeasure = PIXELS_PER_BEAT * beatsPerMeasure
+    const pixelsPerMeasure = scaledPixelsPerBeat * beatsPerMeasure
 
     // === 縦線（時間軸）を描画 ===
     // 64分音符単位のグリッド（最も細い線）
     ctx.strokeStyle = '#1A202C'
     ctx.lineWidth = 0.3
-    const sixtyFourthNoteWidth = PIXELS_PER_BEAT / 16 // 64分音符 = 1拍の1/16
+    const sixtyFourthNoteWidth = scaledPixelsPerBeat / 16 // 64分音符 = 1拍の1/16
     for (let x = 0; x < canvas.width; x += sixtyFourthNoteWidth) {
       ctx.beginPath()
       ctx.moveTo(x, 0)
@@ -102,7 +109,7 @@ export default function PianoRoll({
     // 32分音符単位のグリッド（細い線）
     ctx.strokeStyle = '#2D3748'
     ctx.lineWidth = 0.5
-    const thirtySecondNoteWidth = PIXELS_PER_BEAT / 8 // 32分音符 = 1拍の1/8
+    const thirtySecondNoteWidth = scaledPixelsPerBeat / 8 // 32分音符 = 1拍の1/8
     for (let x = 0; x < canvas.width; x += thirtySecondNoteWidth) {
       ctx.beginPath()
       ctx.moveTo(x, 0)
@@ -113,7 +120,7 @@ export default function PianoRoll({
     // 16分音符単位のグリッド（中細い線）
     ctx.strokeStyle = '#374151'
     ctx.lineWidth = 0.7
-    const sixteenthNoteWidth = PIXELS_PER_BEAT / 4 // 16分音符 = 1拍の1/4
+    const sixteenthNoteWidth = scaledPixelsPerBeat / 4 // 16分音符 = 1拍の1/4
     for (let x = 0; x < canvas.width; x += sixteenthNoteWidth) {
       ctx.beginPath()
       ctx.moveTo(x, 0)
@@ -124,7 +131,7 @@ export default function PianoRoll({
     // 拍単位のグリッド（中間の線）
     ctx.strokeStyle = '#4A5568'
     ctx.lineWidth = 1
-    for (let x = 0; x < canvas.width; x += PIXELS_PER_BEAT) {
+    for (let x = 0; x < canvas.width; x += scaledPixelsPerBeat) {
       ctx.beginPath()
       ctx.moveTo(x, 0)
       ctx.lineTo(x, canvas.height)
@@ -151,14 +158,14 @@ export default function PianoRoll({
     ctx.strokeStyle = '#2D3748'
     ctx.lineWidth = 0.5
     for (let i = 0; i <= TOTAL_NOTES; i++) {
-      const y = i * NOTE_HEIGHT
+      const y = i * scaledNoteHeight
       const midiNote = LOWEST_NOTE + (TOTAL_NOTES - i - 1)
       const isWhiteKey = ![1, 3, 6, 8, 10].includes(midiNote % 12) // C#, D#, F#, G#, A# = 黒鍵
 
       // 白鍵と黒鍵で背景色を変える
       if (!isWhiteKey) {
         ctx.fillStyle = '#2A3544'
-        ctx.fillRect(0, y, canvas.width, NOTE_HEIGHT)
+        ctx.fillRect(0, y, canvas.width, scaledNoteHeight)
       }
 
       ctx.strokeStyle = '#374151'
@@ -170,11 +177,11 @@ export default function PianoRoll({
 
     // ノートを描画
     notes.forEach((note) => {
-      const x = note.start_time * PIXELS_PER_BEAT // 1拍 = 100px
+      const x = note.start_time * scaledPixelsPerBeat
       const noteIndex = note.pitch - LOWEST_NOTE
-      const y = (TOTAL_NOTES - noteIndex - 1) * NOTE_HEIGHT
-      const width = note.duration * PIXELS_PER_BEAT
-      const height = NOTE_HEIGHT
+      const y = (TOTAL_NOTES - noteIndex - 1) * scaledNoteHeight
+      const width = note.duration * scaledPixelsPerBeat
+      const height = scaledNoteHeight
 
       // ノートの色（ベロシティで透明度を変える）
       ctx.fillStyle = `rgba(96, 165, 250, ${note.velocity / 127})`
@@ -188,7 +195,7 @@ export default function PianoRoll({
 
     // 再生ヘッド
     if (isPlaying) {
-      const playheadX = currentTime * PIXELS_PER_BEAT
+      const playheadX = currentTime * scaledPixelsPerBeat
       ctx.strokeStyle = '#EF4444'
       ctx.lineWidth = 2
       ctx.beginPath()
@@ -200,20 +207,23 @@ export default function PianoRoll({
 
   // クリックされた位置にあるノートを見つける
   const findNoteAtPosition = (x: number, y: number): Note | null => {
-    const noteIndex = Math.floor(y / NOTE_HEIGHT)
+    const scaledNoteHeight = NOTE_HEIGHT * verticalZoom
+    const noteIndex = Math.floor(y / scaledNoteHeight)
     const pitch = LOWEST_NOTE + (TOTAL_NOTES - noteIndex - 1)
+
+    const scaledPixelsPerBeat = PIXELS_PER_BEAT * horizontalZoom
 
     // クリック位置にあるノートを検索
     return notes.find((note) => {
-      const noteX = note.start_time * PIXELS_PER_BEAT
-      const noteWidth = note.duration * PIXELS_PER_BEAT
-      const noteY = (TOTAL_NOTES - (note.pitch - LOWEST_NOTE) - 1) * NOTE_HEIGHT
+      const noteX = note.start_time * scaledPixelsPerBeat
+      const noteWidth = note.duration * scaledPixelsPerBeat
+      const noteY = (TOTAL_NOTES - (note.pitch - LOWEST_NOTE) - 1) * scaledNoteHeight
 
       return (
         x >= noteX &&
         x <= noteX + noteWidth &&
         y >= noteY &&
-        y <= noteY + NOTE_HEIGHT
+        y <= noteY + scaledNoteHeight
       )
     }) || null
   }
@@ -228,12 +238,15 @@ export default function PianoRoll({
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
 
+    const scaledPixelsPerBeat = PIXELS_PER_BEAT * horizontalZoom
+    const scaledNoteHeight = NOTE_HEIGHT * verticalZoom
+
     // クリック位置から音程と時間を計算（64分音符単位でスナップ）
-    const sixtyFourthNoteWidth = PIXELS_PER_BEAT / 16
+    const sixtyFourthNoteWidth = scaledPixelsPerBeat / 16
     const startTime = Math.floor(x / sixtyFourthNoteWidth) * (1 / 16) // 64分音符単位
 
     // 音程を計算
-    const noteIndex = Math.floor(y / NOTE_HEIGHT)
+    const noteIndex = Math.floor(y / scaledNoteHeight)
     const pitch = LOWEST_NOTE + (TOTAL_NOTES - noteIndex - 1)
 
     // 音を鳴らす
@@ -337,8 +350,48 @@ export default function PianoRoll({
   return (
     <div className="flex-1 bg-gray-900 flex flex-col overflow-hidden">
       {/* Piano Roll Header */}
-      <div className="h-10 bg-gray-800 border-b border-gray-700 flex items-center px-4">
+      <div className="h-10 bg-gray-800 border-b border-gray-700 flex items-center px-4 gap-4">
         <div className="w-16"></div> {/* Piano keyboard width spacer */}
+
+        {/* Zoom Controls */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400">横:</span>
+          <button
+            onClick={() => setHorizontalZoom(Math.max(0.25, horizontalZoom - 0.25))}
+            className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+            title="横方向を縮小"
+          >
+            -
+          </button>
+          <span className="text-xs text-gray-300 w-12 text-center">{Math.round(horizontalZoom * 100)}%</span>
+          <button
+            onClick={() => setHorizontalZoom(Math.min(4, horizontalZoom + 0.25))}
+            className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+            title="横方向を拡大"
+          >
+            +
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400">縦:</span>
+          <button
+            onClick={() => setVerticalZoom(Math.max(0.25, verticalZoom - 0.25))}
+            className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+            title="縦方向を縮小"
+          >
+            -
+          </button>
+          <span className="text-xs text-gray-300 w-12 text-center">{Math.round(verticalZoom * 100)}%</span>
+          <button
+            onClick={() => setVerticalZoom(Math.min(4, verticalZoom + 0.25))}
+            className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+            title="縦方向を拡大"
+          >
+            +
+          </button>
+        </div>
+
         <div className="text-sm text-gray-400">
           左クリック: ノート追加 | 右クリック: ノート削除 | 64分音符単位でスナップ
         </div>
@@ -348,7 +401,7 @@ export default function PianoRoll({
       <div className="flex-1 flex overflow-hidden">
         {/* Piano Keyboard */}
         <div className="w-16 bg-gray-800 border-r border-gray-700 flex-shrink-0 overflow-hidden">
-          <div style={{ height: `${TOTAL_NOTES * NOTE_HEIGHT}px` }}>
+          <div style={{ height: `${TOTAL_NOTES * NOTE_HEIGHT * verticalZoom}px` }}>
             {Array.from({ length: TOTAL_NOTES }).map((_, i) => {
               const midiNote = LOWEST_NOTE + (TOTAL_NOTES - i - 1)
               const isWhiteKey = ![1, 3, 6, 8, 10].includes(midiNote % 12)
@@ -362,7 +415,7 @@ export default function PianoRoll({
                     isWhiteKey ? 'bg-gray-700 text-gray-300' : 'bg-gray-900 text-gray-500'
                   }`}
                   style={{
-                    height: `${NOTE_HEIGHT}px`,
+                    height: `${NOTE_HEIGHT * verticalZoom}px`,
                     fontWeight: isC ? 'bold' : 'normal',
                   }}
                   title={noteName}
@@ -382,8 +435,8 @@ export default function PianoRoll({
             onContextMenu={handleCanvasRightClick}
             className="cursor-crosshair"
             style={{
-              width: '16000px', // 100小節分 (200px * 4拍 * 20小節) - 大幅に拡大
-              height: `${TOTAL_NOTES * NOTE_HEIGHT}px`, // 88鍵盤 * 16px
+              width: `${16000 * horizontalZoom}px`, // 100小節分をズームに応じて拡大
+              height: `${TOTAL_NOTES * NOTE_HEIGHT * verticalZoom}px`, // 88鍵盤の高さをズームに応じて拡大
             }}
           />
         </div>

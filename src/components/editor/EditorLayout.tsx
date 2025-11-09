@@ -5,7 +5,7 @@ import EditorHeader from './EditorHeader'
 import EditorToolbar from './EditorToolbar'
 import TrackList from './TrackList'
 import PianoRoll from './PianoRoll'
-import { useAudioEngine } from '@/hooks/useAudioEngine'
+import { useAudioEngine, type InstrumentType } from '@/hooks/useAudioEngine'
 import { supabase } from '@/lib/supabase/client'
 
 interface Project {
@@ -163,7 +163,7 @@ export default function EditorLayout({
           isPlaying={isPlaying}
           tempo={project.tempo}
           timeSignature={project.time_signature}
-          instrumentType={(selectedTrack?.track_type || selectedTrack?.instrument || 'piano') as any}
+          instrumentType={(selectedTrack?.track_type || selectedTrack?.instrument || 'piano') as InstrumentType}
           onPlayNote={playNote}
         />
       </div>
