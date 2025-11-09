@@ -96,7 +96,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-gray-400 text-sm">
-        <p>&copy; 2024 DTM Web App. All rights reserved.</p>
+        <p>&copy; 2025 DTM Web App. All rights reserved.</p>
       </footer>
     </main>
   )
