@@ -152,32 +152,32 @@ export default function TrackList({
 
   if (loading) {
     return (
-      <div className="w-64 bg-gray-800 border-r border-gray-700 p-4">
-        <div className="text-gray-400">読み込み中...</div>
+      <div className="w-48 bg-gray-800 border-r border-gray-700 p-3">
+        <div className="text-gray-400 text-xs">読み込み中...</div>
       </div>
     )
   }
 
   return (
-    <div className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
+    <div className="w-48 bg-gray-800 border-r border-gray-700 flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-gray-700">
-        <h3 className="text-sm font-semibold text-gray-300 mb-3">トラック</h3>
+      <div className="p-3 border-b border-gray-700">
+        <h3 className="text-xs font-semibold text-gray-300 mb-2">トラック</h3>
         <button
           onClick={addTrack}
-          className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm flex items-center justify-center gap-2 transition-colors"
+          className="w-full px-2 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-xs flex items-center justify-center gap-1 transition-colors"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          トラックを追加
+          追加
         </button>
       </div>
 
       {/* Track List */}
       <div className="flex-1 overflow-y-auto">
         {tracks.length === 0 ? (
-          <div className="p-4 text-sm text-gray-400 text-center">
+          <div className="p-3 text-xs text-gray-400 text-center">
             トラックがありません
           </div>
         ) : (
@@ -185,45 +185,45 @@ export default function TrackList({
             <div
               key={track.id}
               onClick={() => onSelectTrack(track.id)}
-              className={`p-3 border-b border-gray-700 cursor-pointer transition-colors ${
+              className={`p-2 border-b border-gray-700 cursor-pointer transition-colors ${
                 selectedTrackId === track.id
                   ? 'bg-gray-700'
                   : 'hover:bg-gray-750'
               }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
                   {/* Track Icon */}
-                  <div className="text-lg flex-shrink-0">
+                  <div className="text-sm flex-shrink-0">
                     {track.icon || TRACK_TYPE_CONFIG[track.track_type || 'instrument'].icon}
                   </div>
                   {/* Track Name */}
-                  <div className="text-sm font-medium truncate flex-1">
+                  <div className="text-xs font-medium truncate flex-1">
                     {track.name}
                   </div>
                   {/* Color Indicator */}
                   <div
-                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    className="w-2 h-2 rounded-full flex-shrink-0"
                     style={{ backgroundColor: track.color }}
                   ></div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-xs text-gray-400 ml-7">
-                <span className="capitalize">
+              <div className="flex items-center gap-1.5 text-[10px] text-gray-400 ml-5">
+                <span className="capitalize truncate">
                   {track.track_type ? TRACK_TYPE_CONFIG[track.track_type].label : track.instrument}
                 </span>
                 <span>•</span>
                 <span>{track.volume}%</span>
               </div>
 
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-1 mt-1.5">
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
                     toggleMute(track.id)
                   }}
-                  className={`px-2 py-1 text-xs rounded ${
+                  className={`px-1.5 py-0.5 text-[10px] rounded ${
                     track.muted
                       ? 'bg-red-600 text-white'
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -236,7 +236,7 @@ export default function TrackList({
                     e.stopPropagation()
                     toggleSolo(track.id)
                   }}
-                  className={`px-2 py-1 text-xs rounded ${
+                  className={`px-1.5 py-0.5 text-[10px] rounded ${
                     track.solo
                       ? 'bg-yellow-600 text-white'
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
