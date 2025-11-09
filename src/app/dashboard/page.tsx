@@ -20,24 +20,35 @@ export default function DashboardPage() {
   const router = useRouter()
 
   useEffect(() => {
+    console.log('[Dashboard] useEffect triggered', { authLoading, user: user?.email })
     if (!authLoading && user) {
+      console.log('[Dashboard] Loading projects for user:', user.email)
       loadProjects()
+    } else if (!authLoading && !user) {
+      console.log('[Dashboard] No user found, stopping loading')
+      setLoading(false)
     }
   }, [user, authLoading])
 
   const loadProjects = async () => {
+    console.log('[Dashboard] loadProjects called')
     try {
       const { data, error } = await supabase
         .from('projects')
         .select('*')
         .order('updated_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('[Dashboard] Error loading projects:', error)
+        throw error
+      }
 
+      console.log('[Dashboard] Projects loaded:', data?.length || 0)
       setProjects(data || [])
     } catch (error) {
-      console.error('Error loading projects:', error)
+      console.error('[Dashboard] Error loading projects:', error)
     } finally {
+      console.log('[Dashboard] Setting loading to false')
       setLoading(false)
     }
   }
@@ -48,11 +59,20 @@ export default function DashboardPage() {
   }
 
   const handleCreateProject = async () => {
+    if (!user) {
+      console.error('User not logged in')
+      alert('ログインしてください')
+      return
+    }
+
+    console.log('Creating project for user:', user.id)
+
     try {
       const { data, error } = await supabase
         .from('projects')
         .insert([
           {
+            user_id: user.id,
             name: '新しいプロジェクト',
             tempo: 120,
             time_signature: '4/4',
@@ -62,9 +82,14 @@ export default function DashboardPage() {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Error creating project:', error)
+        alert(`プロジェクト作成エラー: ${error.message}`)
+        throw error
+      }
 
       if (data) {
+        console.log('✅ Project created:', data.id)
         router.push(`/editor/${data.id}`)
       }
     } catch (error) {

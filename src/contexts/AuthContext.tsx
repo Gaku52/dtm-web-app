@@ -23,20 +23,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // usersテーブルにレコードが存在することを確認し、なければ作成
+  const ensureUserRecord = async (authUser: User) => {
+    try {
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', authUser.id)
+        .single()
+
+      if (!existingUser) {
+        console.log('Creating user record for:', authUser.email)
+        const { error } = await supabase.from('users').insert([
+          {
+            id: authUser.id,
+            email: authUser.email,
+            username: authUser.email?.split('@')[0],
+            display_name: authUser.email?.split('@')[0],
+          },
+        ])
+
+        if (error) {
+          console.error('Error creating user record:', error)
+        } else {
+          console.log('✅ User record created successfully')
+        }
+      }
+    } catch (error) {
+      console.error('Error ensuring user record:', error)
+    }
+  }
+
   useEffect(() => {
+    console.log('[AuthContext] Initializing...')
+
     // 初期セッション取得
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('[AuthContext] Initial session:', session?.user?.email || 'No user')
       setSession(session)
       setUser(session?.user ?? null)
+
+      // ユーザーがログインしている場合、usersテーブルにレコードを作成
+      if (session?.user) {
+        await ensureUserRecord(session.user)
+      }
+
+      console.log('[AuthContext] Setting loading to false (initial)')
       setLoading(false)
     })
 
     // 認証状態の変更を監視
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[AuthContext] Auth state changed:', event, session?.user?.email || 'No user')
       setSession(session)
       setUser(session?.user ?? null)
+
+      // ユーザーがログインした場合、usersテーブルにレコードを作成
+      if (session?.user) {
+        await ensureUserRecord(session.user)
+      }
+
+      console.log('[AuthContext] Setting loading to false (state change)')
       setLoading(false)
     })
 

@@ -17,7 +17,7 @@ interface PianoRollProps {
   selectedTrackId: string | null
   currentTime: number
   isPlaying: boolean
-  onPlayNote?: (pitch: number, duration?: number, velocity?: number) => void
+  onPlayNote?: (pitch: number, duration?: number, velocity?: number) => Promise<void>
 }
 
 export default function PianoRoll({
@@ -134,7 +134,8 @@ export default function PianoRoll({
 
     // 音を鳴らす
     if (onPlayNote) {
-      onPlayNote(pitch, 0.5, 100)
+      console.log('🎹 Piano Roll: Playing note', { pitch, velocity: 100 })
+      await onPlayNote(pitch, 0.5, 100)
     }
 
     // ノートを追加

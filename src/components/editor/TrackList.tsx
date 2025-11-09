@@ -37,7 +37,7 @@ export default function TrackList({
         .from('tracks')
         .select('*')
         .eq('project_id', projectId)
-        .order('order', { ascending: true })
+        .order('order_index', { ascending: true })
 
       if (error) throw error
       setTracks(data || [])
@@ -66,7 +66,7 @@ export default function TrackList({
             volume: 80,
             muted: false,
             solo: false,
-            order: tracks.length,
+            order_index: tracks.length,
           },
         ])
         .select()
