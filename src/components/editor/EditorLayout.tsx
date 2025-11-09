@@ -31,12 +31,19 @@ interface Note {
   velocity: number
 }
 
+interface Track {
+  id: string
+  instrument: string
+  track_type?: string
+}
+
 export default function EditorLayout({
   project,
   onUpdateProject,
   onBack,
 }: EditorLayoutProps) {
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null)
+  const [selectedTrack, setSelectedTrack] = useState<Track | null>(null)
   const [allNotes, setAllNotes] = useState<Note[]>([])
 
   const {
@@ -136,7 +143,16 @@ export default function EditorLayout({
         <TrackList
           projectId={project.id}
           selectedTrackId={selectedTrackId}
-          onSelectTrack={setSelectedTrackId}
+          onSelectTrack={async (trackId) => {
+            setSelectedTrackId(trackId)
+            // トラック情報を取得
+            const { data } = await supabase
+              .from('tracks')
+              .select('id, instrument, track_type')
+              .eq('id', trackId)
+              .single()
+            setSelectedTrack(data)
+          }}
         />
 
         {/* Piano Roll */}
@@ -147,6 +163,7 @@ export default function EditorLayout({
           isPlaying={isPlaying}
           tempo={project.tempo}
           timeSignature={project.time_signature}
+          instrumentType={(selectedTrack?.track_type || selectedTrack?.instrument || 'piano') as any}
           onPlayNote={playNote}
         />
       </div>

@@ -19,12 +19,13 @@ interface PianoRollProps {
   isPlaying: boolean
   tempo?: number
   timeSignature?: string
-  onPlayNote?: (pitch: number, duration?: number, velocity?: number) => Promise<void>
+  instrumentType?: string
+  onPlayNote?: (pitch: number, duration?: number, velocity?: number, instrumentType?: string) => Promise<void>
 }
 
 // Grid constants
 const PIXELS_PER_BEAT = 200 // 1拍 = 200px (2倍に拡大して精密化)
-const NOTE_HEIGHT = 16 // 各音程の高さ (より細かく)
+const NOTE_HEIGHT = 8 // 各音程の高さ (さらに細かく - 16px→8px)
 const TOTAL_NOTES = 88 // ピアノの鍵盤数（MIDI 21-108）
 const LOWEST_NOTE = 21 // A0
 
@@ -35,6 +36,7 @@ export default function PianoRoll({
   isPlaying,
   tempo = 120,
   timeSignature = '4/4',
+  instrumentType = 'piano',
   onPlayNote,
 }: PianoRollProps) {
   const [notes, setNotes] = useState<Note[]>([])
@@ -236,8 +238,8 @@ export default function PianoRoll({
 
     // 音を鳴らす
     if (onPlayNote) {
-      console.log('🎹 Piano Roll: Playing note', { pitch, velocity: 100 })
-      await onPlayNote(pitch, 0.5, 100)
+      console.log(`🎹 Piano Roll: Playing note (${instrumentType})`, { pitch, velocity: 100 })
+      await onPlayNote(pitch, 0.5, 100, instrumentType)
     }
 
     // ノートを追加

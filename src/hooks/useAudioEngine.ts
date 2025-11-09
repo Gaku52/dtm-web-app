@@ -8,6 +8,120 @@ interface Note {
   start_time: number
   duration: number
   velocity: number
+  track_id?: string
+}
+
+type InstrumentType = 'piano' | 'synth' | 'bass' | 'drums' | 'guitar' | 'strings' | 'brass' | 'woodwind' | 'vocal' | 'percussion' | 'fx' | 'instrument'
+
+// 楽器タイプごとの音色設定
+const INSTRUMENT_CONFIGS: Record<InstrumentType, {
+  oscillatorType: OscillatorType
+  attackTime: number
+  decayTime: number
+  sustainLevel: number
+  releaseTime: number
+  volume: number
+  detune?: number // デチューン（音の厚み）
+}> = {
+  piano: {
+    oscillatorType: 'triangle',
+    attackTime: 0.005,
+    decayTime: 0.1,
+    sustainLevel: 0.3,
+    releaseTime: 0.3,
+    volume: 0.3,
+  },
+  synth: {
+    oscillatorType: 'sawtooth',
+    attackTime: 0.02,
+    decayTime: 0.15,
+    sustainLevel: 0.5,
+    releaseTime: 0.2,
+    volume: 0.25,
+    detune: 5, // わずかにデチューン
+  },
+  bass: {
+    oscillatorType: 'sawtooth',
+    attackTime: 0.01,
+    decayTime: 0.2,
+    sustainLevel: 0.7,
+    releaseTime: 0.1,
+    volume: 0.4,
+  },
+  drums: {
+    oscillatorType: 'square',
+    attackTime: 0.001,
+    decayTime: 0.05,
+    sustainLevel: 0.0,
+    releaseTime: 0.05,
+    volume: 0.5,
+  },
+  guitar: {
+    oscillatorType: 'sawtooth',
+    attackTime: 0.003,
+    decayTime: 0.08,
+    sustainLevel: 0.4,
+    releaseTime: 0.4,
+    volume: 0.3,
+    detune: 3,
+  },
+  strings: {
+    oscillatorType: 'sawtooth',
+    attackTime: 0.15,
+    decayTime: 0.2,
+    sustainLevel: 0.6,
+    releaseTime: 0.5,
+    volume: 0.25,
+  },
+  brass: {
+    oscillatorType: 'sawtooth',
+    attackTime: 0.05,
+    decayTime: 0.1,
+    sustainLevel: 0.7,
+    releaseTime: 0.3,
+    volume: 0.35,
+  },
+  woodwind: {
+    oscillatorType: 'sine',
+    attackTime: 0.03,
+    decayTime: 0.1,
+    sustainLevel: 0.5,
+    releaseTime: 0.25,
+    volume: 0.28,
+  },
+  vocal: {
+    oscillatorType: 'sine',
+    attackTime: 0.02,
+    decayTime: 0.15,
+    sustainLevel: 0.6,
+    releaseTime: 0.3,
+    volume: 0.3,
+  },
+  percussion: {
+    oscillatorType: 'square',
+    attackTime: 0.001,
+    decayTime: 0.08,
+    sustainLevel: 0.1,
+    releaseTime: 0.1,
+    volume: 0.4,
+  },
+  fx: {
+    oscillatorType: 'sine',
+    attackTime: 0.1,
+    decayTime: 0.3,
+    sustainLevel: 0.4,
+    releaseTime: 0.5,
+    volume: 0.2,
+    detune: 10,
+  },
+  instrument: {
+    oscillatorType: 'triangle',
+    attackTime: 0.01,
+    decayTime: 0.1,
+    sustainLevel: 0.4,
+    releaseTime: 0.2,
+    volume: 0.3,
+  },
 }
 
 export function useAudioEngine(tempo: number = 120) {
@@ -41,7 +155,7 @@ export function useAudioEngine(tempo: number = 120) {
     }
   }, [tempo])
 
-  const playNote = async (pitch: number, duration: number = 0.5, velocity: number = 100) => {
+  const playNote = async (pitch: number, duration: number = 0.5, velocity: number = 100, instrumentType: InstrumentType = 'piano') => {
     if (!audioContextRef.current) {
       console.error('❌ AudioContext not initialized')
       return
@@ -56,26 +170,31 @@ export function useAudioEngine(tempo: number = 120) {
         console.log('🎵 AudioContext resumed')
       }
 
+      // 楽器設定を取得
+      const config = INSTRUMENT_CONFIGS[instrumentType] || INSTRUMENT_CONFIGS.piano
+
       // MIDI番号から周波数を計算 (A4 = 440Hz = MIDI 69)
       const frequency = 440 * Math.pow(2, (pitch - 69) / 12)
-      const volume = (velocity / 127) * 0.3 // 音量を適切に調整
+      const volume = (velocity / 127) * config.volume
 
-      console.log(`🎵 Playing note: MIDI ${pitch} (${frequency.toFixed(2)}Hz), duration: ${duration}s, velocity: ${velocity}`)
+      console.log(`🎵 Playing ${instrumentType}: MIDI ${pitch} (${frequency.toFixed(2)}Hz), duration: ${duration}s, velocity: ${velocity}`)
 
       // オシレーター（音源）を作成
       const oscillator = ctx.createOscillator()
       const gainNode = ctx.createGain()
 
-      // オシレーターを設定
-      oscillator.type = 'triangle' // 三角波
+      // オシレーターを設定（楽器タイプに応じた波形）
+      oscillator.type = config.oscillatorType
       oscillator.frequency.value = frequency
 
-      // エンベロープ（ADSR）を設定
+      // デチューン（音の厚み）を設定
+      if (config.detune) {
+        oscillator.detune.value = config.detune
+      }
+
+      // エンベロープ（ADSR）を設定（楽器タイプに応じた値）
       const now = ctx.currentTime
-      const attackTime = 0.005
-      const decayTime = 0.1
-      const sustainLevel = 0.3
-      const releaseTime = 0.1
+      const { attackTime, decayTime, sustainLevel, releaseTime } = config
 
       // Attack
       gainNode.gain.setValueAtTime(0, now)
