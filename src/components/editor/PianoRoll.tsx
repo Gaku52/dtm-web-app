@@ -23,9 +23,8 @@ interface PianoRollProps {
 }
 
 // Grid constants
-const PIXELS_PER_BEAT = 100 // 1拍 = 100px
-const PIXELS_PER_SECOND = 50 // 1秒 = 50px (at 120 BPM, 1 beat = 0.5s)
-const NOTE_HEIGHT = 20 // 各音程の高さ
+const PIXELS_PER_BEAT = 200 // 1拍 = 200px (2倍に拡大して精密化)
+const NOTE_HEIGHT = 16 // 各音程の高さ (より細かく)
 const TOTAL_NOTES = 88 // ピアノの鍵盤数（MIDI 21-108）
 const LOWEST_NOTE = 21 // A0
 
@@ -87,9 +86,31 @@ export default function PianoRoll({
     const pixelsPerMeasure = PIXELS_PER_BEAT * beatsPerMeasure
 
     // === 縦線（時間軸）を描画 ===
-    // 16分音符単位のグリッド（細い線）
+    // 64分音符単位のグリッド（最も細い線）
+    ctx.strokeStyle = '#1A202C'
+    ctx.lineWidth = 0.3
+    const sixtyFourthNoteWidth = PIXELS_PER_BEAT / 16 // 64分音符 = 1拍の1/16
+    for (let x = 0; x < canvas.width; x += sixtyFourthNoteWidth) {
+      ctx.beginPath()
+      ctx.moveTo(x, 0)
+      ctx.lineTo(x, canvas.height)
+      ctx.stroke()
+    }
+
+    // 32分音符単位のグリッド（細い線）
     ctx.strokeStyle = '#2D3748'
     ctx.lineWidth = 0.5
+    const thirtySecondNoteWidth = PIXELS_PER_BEAT / 8 // 32分音符 = 1拍の1/8
+    for (let x = 0; x < canvas.width; x += thirtySecondNoteWidth) {
+      ctx.beginPath()
+      ctx.moveTo(x, 0)
+      ctx.lineTo(x, canvas.height)
+      ctx.stroke()
+    }
+
+    // 16分音符単位のグリッド（中細い線）
+    ctx.strokeStyle = '#374151'
+    ctx.lineWidth = 0.7
     const sixteenthNoteWidth = PIXELS_PER_BEAT / 4 // 16分音符 = 1拍の1/4
     for (let x = 0; x < canvas.width; x += sixteenthNoteWidth) {
       ctx.beginPath()
@@ -185,9 +206,9 @@ export default function PianoRoll({
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
 
-    // クリック位置から音程と時間を計算（16分音符単位でスナップ）
-    const sixteenthNoteWidth = PIXELS_PER_BEAT / 4
-    const startTime = Math.floor(x / sixteenthNoteWidth) * (1 / 4) // 16分音符単位
+    // クリック位置から音程と時間を計算（64分音符単位でスナップ）
+    const sixtyFourthNoteWidth = PIXELS_PER_BEAT / 16
+    const startTime = Math.floor(x / sixtyFourthNoteWidth) * (1 / 16) // 64分音符単位
 
     // 音程を計算
     const noteIndex = Math.floor(y / NOTE_HEIGHT)
@@ -250,26 +271,66 @@ export default function PianoRoll({
     )
   }
 
+  // 音名を取得する関数
+  const getNoteName = (midiNote: number) => {
+    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    const octave = Math.floor(midiNote / 12) - 1
+    const noteName = noteNames[midiNote % 12]
+    return `${noteName}${octave}`
+  }
+
   return (
     <div className="flex-1 bg-gray-900 flex flex-col overflow-hidden">
       {/* Piano Roll Header */}
       <div className="h-10 bg-gray-800 border-b border-gray-700 flex items-center px-4">
+        <div className="w-16"></div> {/* Piano keyboard width spacer */}
         <div className="text-sm text-gray-400">
-          クリックしてノートを追加
+          クリックしてノートを追加 | 64分音符単位でスナップ
         </div>
       </div>
 
-      {/* Canvas */}
-      <div className="flex-1 relative overflow-auto bg-gray-900">
-        <canvas
-          ref={canvasRef}
-          onClick={handleCanvasClick}
-          className="cursor-crosshair"
-          style={{
-            width: '4000px', // 40小節分 (100px * 4拍 * 10小節)
-            height: `${TOTAL_NOTES * NOTE_HEIGHT}px`, // 88鍵盤 * 20px
-          }}
-        />
+      {/* Piano Roll with Keyboard */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Piano Keyboard */}
+        <div className="w-16 bg-gray-800 border-r border-gray-700 flex-shrink-0 overflow-hidden">
+          <div style={{ height: `${TOTAL_NOTES * NOTE_HEIGHT}px` }}>
+            {Array.from({ length: TOTAL_NOTES }).map((_, i) => {
+              const midiNote = LOWEST_NOTE + (TOTAL_NOTES - i - 1)
+              const isWhiteKey = ![1, 3, 6, 8, 10].includes(midiNote % 12)
+              const noteName = getNoteName(midiNote)
+              const isC = midiNote % 12 === 0
+
+              return (
+                <div
+                  key={i}
+                  className={`flex items-center justify-center text-xs border-b border-gray-700 ${
+                    isWhiteKey ? 'bg-gray-700 text-gray-300' : 'bg-gray-900 text-gray-500'
+                  }`}
+                  style={{
+                    height: `${NOTE_HEIGHT}px`,
+                    fontWeight: isC ? 'bold' : 'normal',
+                  }}
+                  title={noteName}
+                >
+                  {isC && <span className="text-[10px]">{noteName}</span>}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Canvas */}
+        <div className="flex-1 relative overflow-auto bg-gray-900">
+          <canvas
+            ref={canvasRef}
+            onClick={handleCanvasClick}
+            className="cursor-crosshair"
+            style={{
+              width: '16000px', // 100小節分 (200px * 4拍 * 20小節) - 大幅に拡大
+              height: `${TOTAL_NOTES * NOTE_HEIGHT}px`, // 88鍵盤 * 16px
+            }}
+          />
+        </div>
       </div>
     </div>
   )
