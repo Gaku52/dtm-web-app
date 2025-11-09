@@ -3,14 +3,34 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 
+type TrackType = 'vocal' | 'bass' | 'drums' | 'guitar' | 'piano' | 'synth' | 'strings' | 'brass' | 'woodwind' | 'percussion' | 'fx' | 'instrument'
+
 interface Track {
   id: string
   name: string
   instrument: string
+  track_type?: TrackType
+  icon?: string
   color: string
   volume: number
   muted: boolean
   solo: boolean
+}
+
+// Track type configurations
+const TRACK_TYPE_CONFIG: Record<TrackType, { label: string; icon: string; defaultColor: string }> = {
+  vocal: { label: 'ボーカル', icon: '🎤', defaultColor: '#EF4444' },
+  bass: { label: 'ベース', icon: '🎸', defaultColor: '#10B981' },
+  drums: { label: 'ドラム', icon: '🥁', defaultColor: '#F59E0B' },
+  guitar: { label: 'ギター', icon: '🎸', defaultColor: '#8B5CF6' },
+  piano: { label: 'ピアノ', icon: '🎹', defaultColor: '#3B82F6' },
+  synth: { label: 'シンセ', icon: '🎛️', defaultColor: '#EC4899' },
+  strings: { label: 'ストリングス', icon: '🎻', defaultColor: '#F97316' },
+  brass: { label: 'ブラス', icon: '🎺', defaultColor: '#FBBF24' },
+  woodwind: { label: 'ウッドウィンド', icon: '🎷', defaultColor: '#84CC16' },
+  percussion: { label: 'パーカッション', icon: '🥁', defaultColor: '#F43F5E' },
+  fx: { label: 'FX', icon: '✨', defaultColor: '#06B6D4' },
+  instrument: { label: '楽器', icon: '🎵', defaultColor: '#60A5FA' },
 }
 
 interface TrackListProps {
@@ -55,14 +75,22 @@ export default function TrackList({
 
   const addTrack = async () => {
     try {
-      const { data, error } = await supabase
+      // 既存のトラックタイプをカウントして、次のトラックタイプを決定
+      const trackTypeOrder: TrackType[] = ['vocal', 'bass', 'drums', 'guitar', 'piano', 'synth']
+      const nextTypeIndex = tracks.length % trackTypeOrder.length
+      const trackType = trackTypeOrder[nextTypeIndex]
+      const config = TRACK_TYPE_CONFIG[trackType]
+
+      const { data, error} = await supabase
         .from('tracks')
         .insert([
           {
             project_id: projectId,
-            name: `トラック ${tracks.length + 1}`,
-            instrument: 'piano',
-            color: '#60A5FA',
+            name: `${config.label} ${Math.floor(tracks.length / trackTypeOrder.length) + 1}`,
+            instrument: trackType,
+            track_type: trackType,
+            icon: config.icon,
+            color: config.defaultColor,
             volume: 80,
             muted: false,
             solo: false,
@@ -164,19 +192,27 @@ export default function TrackList({
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: track.color }}
-                  ></div>
-                  <div className="text-sm font-medium truncate">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {/* Track Icon */}
+                  <div className="text-lg flex-shrink-0">
+                    {track.icon || TRACK_TYPE_CONFIG[track.track_type || 'instrument'].icon}
+                  </div>
+                  {/* Track Name */}
+                  <div className="text-sm font-medium truncate flex-1">
                     {track.name}
                   </div>
+                  {/* Color Indicator */}
+                  <div
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: track.color }}
+                  ></div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <span className="capitalize">{track.instrument}</span>
+              <div className="flex items-center gap-2 text-xs text-gray-400 ml-7">
+                <span className="capitalize">
+                  {track.track_type ? TRACK_TYPE_CONFIG[track.track_type].label : track.instrument}
+                </span>
                 <span>•</span>
                 <span>{track.volume}%</span>
               </div>

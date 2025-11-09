@@ -4,6 +4,7 @@ interface EditorToolbarProps {
   isPlaying: boolean
   tempo: number
   timeSignature: string
+  currentTime: number
   onPlay: () => void
   onPause: () => void
   onStop: () => void
@@ -15,12 +16,20 @@ export default function EditorToolbar({
   isPlaying,
   tempo,
   timeSignature,
+  currentTime,
   onPlay,
   onPause,
   onStop,
   onTempoChange,
   onTimeSignatureChange,
 }: EditorToolbarProps) {
+  // 時間を mm:ss.ms 形式にフォーマット
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    const ms = Math.floor((seconds % 1) * 100)
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`
+  }
   return (
     <div className="h-14 bg-gray-800 border-b border-gray-700 flex items-center px-6 gap-6">
       {/* Transport Controls */}
@@ -66,8 +75,9 @@ export default function EditorToolbar({
       {/* Tempo */}
       <div className="flex items-center gap-2">
         <button
-          onClick={() => onTempoChange(Math.max(40, tempo - 1))}
+          onClick={() => onTempoChange(Math.max(40, tempo - 0.1))}
           className="p-1 hover:bg-gray-700 rounded"
+          title="BPMを0.1下げる"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
@@ -78,18 +88,22 @@ export default function EditorToolbar({
             type="number"
             value={tempo}
             onChange={(e) => {
-              const val = parseInt(e.target.value)
-              if (val >= 40 && val <= 300) onTempoChange(val)
+              const val = parseFloat(e.target.value)
+              if (!isNaN(val) && val >= 40 && val <= 300) {
+                onTempoChange(Math.round(val * 100) / 100) // 小数点2桁まで
+              }
             }}
-            className="w-16 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-center text-sm focus:outline-none focus:border-blue-500"
+            step="0.1"
+            className="w-20 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-center text-sm focus:outline-none focus:border-blue-500"
             min="40"
             max="300"
           />
           <span className="text-sm text-gray-400">BPM</span>
         </div>
         <button
-          onClick={() => onTempoChange(Math.min(300, tempo + 1))}
+          onClick={() => onTempoChange(Math.min(300, tempo + 0.1))}
           className="p-1 hover:bg-gray-700 rounded"
+          title="BPMを0.1上げる"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -118,8 +132,8 @@ export default function EditorToolbar({
       <div className="flex-1"></div>
 
       {/* Info */}
-      <div className="text-sm text-gray-400">
-        00:00
+      <div className="text-sm text-gray-400 font-mono">
+        {formatTime(currentTime)}
       </div>
     </div>
   )

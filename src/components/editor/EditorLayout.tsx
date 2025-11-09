@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import EditorHeader from './EditorHeader'
 import EditorToolbar from './EditorToolbar'
 import TrackList from './TrackList'
 import PianoRoll from './PianoRoll'
 import { useAudioEngine } from '@/hooks/useAudioEngine'
+import { supabase } from '@/lib/supabase/client'
 
 interface Project {
   id: string
@@ -21,12 +22,22 @@ interface EditorLayoutProps {
   onBack: () => void
 }
 
+interface Note {
+  id: string
+  track_id: string
+  pitch: number
+  start_time: number
+  duration: number
+  velocity: number
+}
+
 export default function EditorLayout({
   project,
   onUpdateProject,
   onBack,
 }: EditorLayoutProps) {
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null)
+  const [allNotes, setAllNotes] = useState<Note[]>([])
 
   const {
     isPlaying,
@@ -38,8 +49,45 @@ export default function EditorLayout({
     stop,
   } = useAudioEngine(project.tempo)
 
+  // プロジェクトの全ノートを読み込む
+  useEffect(() => {
+    loadAllNotes()
+  }, [project.id])
+
+  const loadAllNotes = async () => {
+    try {
+      // プロジェクトに属する全トラックのノートを取得
+      const { data: tracks, error: tracksError } = await supabase
+        .from('tracks')
+        .select('id')
+        .eq('project_id', project.id)
+
+      if (tracksError) throw tracksError
+
+      if (tracks && tracks.length > 0) {
+        const trackIds = tracks.map(t => t.id)
+
+        const { data: notes, error: notesError } = await supabase
+          .from('notes')
+          .select('*')
+          .in('track_id', trackIds)
+
+        if (notesError) throw notesError
+
+        console.log('📝 Loaded', notes?.length || 0, 'notes for playback')
+        setAllNotes(notes || [])
+        scheduleNotes(notes || [])
+      }
+    } catch (error) {
+      console.error('Error loading notes:', error)
+    }
+  }
+
   const handlePlay = () => {
-    play()
+    // 再生前に最新のノートを読み込んでスケジュール
+    loadAllNotes().then(() => {
+      play()
+    })
   }
 
   const handlePause = () => {
@@ -72,6 +120,7 @@ export default function EditorLayout({
         isPlaying={isPlaying}
         tempo={project.tempo}
         timeSignature={project.time_signature}
+        currentTime={currentTime}
         onPlay={handlePlay}
         onPause={handlePause}
         onStop={handleStop}
@@ -96,6 +145,8 @@ export default function EditorLayout({
           selectedTrackId={selectedTrackId}
           currentTime={currentTime}
           isPlaying={isPlaying}
+          tempo={project.tempo}
+          timeSignature={project.time_signature}
           onPlayNote={playNote}
         />
       </div>
