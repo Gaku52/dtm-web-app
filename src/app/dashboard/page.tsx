@@ -97,6 +97,39 @@ export default function DashboardPage() {
     }
   }
 
+  const handleDeleteProject = async (projectId: string, projectName: string, e: React.MouseEvent) => {
+    // カード全体のクリックイベントを防ぐ
+    e.stopPropagation()
+
+    // 確認ダイアログ
+    const confirmed = window.confirm(
+      `プロジェクト「${projectName}」を削除しますか？\n\nこの操作は取り消せません。`
+    )
+
+    if (!confirmed) return
+
+    try {
+      // プロジェクトを削除（CASCADE設定により、関連するトラックとノートも自動削除される）
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId)
+
+      if (error) {
+        console.error('Error deleting project:', error)
+        alert(`プロジェクト削除エラー: ${error.message}`)
+        throw error
+      }
+
+      console.log('✅ Project deleted:', projectId)
+
+      // リストから削除
+      setProjects(projects.filter(p => p.id !== projectId))
+    } catch (error) {
+      console.error('Error deleting project:', error)
+    }
+  }
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
@@ -171,14 +204,16 @@ export default function DashboardPage() {
               <div
                 key={project.id}
                 onClick={() => router.push(`/editor/${project.id}`)}
-                className="bg-gray-800 rounded-lg border border-gray-700 p-6 hover:border-blue-500 transition-all cursor-pointer group"
+                className="bg-gray-800 rounded-lg border border-gray-700 p-6 hover:border-blue-500 transition-all cursor-pointer group relative"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-white group-hover:text-blue-400 transition-colors">
-                    {project.name}
-                  </h3>
+                {/* 削除ボタン */}
+                <button
+                  onClick={(e) => handleDeleteProject(project.id, project.name, e)}
+                  className="absolute top-4 right-4 p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded transition-colors opacity-0 group-hover:opacity-100"
+                  title="プロジェクトを削除"
+                >
                   <svg
-                    className="w-5 h-5 text-gray-500 group-hover:text-blue-400 transition-colors"
+                    className="w-5 h-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -187,9 +222,15 @@ export default function DashboardPage() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M9 5l7 7-7 7"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                     />
                   </svg>
+                </button>
+
+                <div className="flex items-start justify-between mb-4 pr-8">
+                  <h3 className="text-xl font-semibold text-white group-hover:text-blue-400 transition-colors">
+                    {project.name}
+                  </h3>
                 </div>
                 <div className="space-y-2 text-sm text-gray-400">
                   <div className="flex items-center gap-2">
