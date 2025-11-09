@@ -41,24 +41,36 @@ export async function exportToWav(
 ): Promise<Blob> {
   const { duration = 60, onProgress } = options
 
-  // Calculate actual duration based on notes
-  const maxEndTime = notes.reduce((max, note) => {
-    return Math.max(max, note.start_time + note.duration)
-  }, 0)
-  const actualDuration = Math.min(maxEndTime + 2, duration) // Add 2 seconds buffer
-
   if (onProgress) onProgress(0)
 
   // Filter tracks that have solo enabled
   const soloTracks = tracks.filter(t => t.solo)
   const activeTracks = soloTracks.length > 0 ? soloTracks : tracks.filter(t => !t.muted)
 
+  // Filter notes for active tracks only
+  const activeTrackIds = new Set(activeTracks.map(t => t.id))
+  const activeNotes = notes.filter(n => activeTrackIds.has(n.track_id))
+
+  // Calculate actual duration based on notes
+  const maxEndTime = activeNotes.reduce((max, note) => {
+    const endTime = (note.start_time || 0) + (note.duration || 0)
+    return Math.max(max, endTime)
+  }, 0)
+
+  // Ensure minimum duration of 1 second, maximum of requested duration
+  const actualDuration = Math.max(1, Math.min(maxEndTime + 2, duration))
+
+  // Validate actualDuration is finite
+  if (!isFinite(actualDuration) || actualDuration <= 0) {
+    throw new Error('Invalid audio duration calculated')
+  }
+
   // Create offline audio context
   const sampleRate = 44100
   const numberOfChannels = 2
   const offlineContext = new OfflineAudioContext(
     numberOfChannels,
-    sampleRate * actualDuration,
+    Math.floor(sampleRate * actualDuration),
     sampleRate
   )
 
@@ -66,14 +78,31 @@ export async function exportToWav(
 
   // Create audio for each active track
   activeTracks.forEach((track, trackIndex) => {
-    const trackNotes = notes.filter(n => n.track_id === track.id)
+    const trackNotes = activeNotes.filter(n => n.track_id === track.id)
     if (trackNotes.length === 0) return
 
     // Create notes for this track
     trackNotes.forEach(note => {
+      // Validate note data
+      if (!isFinite(note.note_number) || !isFinite(note.start_time) || !isFinite(note.duration)) {
+        console.warn('Skipping invalid note:', note)
+        return
+      }
+
+      if (note.duration <= 0 || note.start_time < 0) {
+        console.warn('Skipping note with invalid timing:', note)
+        return
+      }
+
       const freq = noteNumberToFrequency(note.note_number)
-      const velocity = note.velocity / 100
-      const trackVolume = track.volume / 100
+      const velocity = Math.max(0, Math.min(100, note.velocity || 80)) / 100
+      const trackVolume = Math.max(0, Math.min(100, track.volume || 100)) / 100
+
+      // Validate frequency
+      if (!isFinite(freq) || freq <= 0) {
+        console.warn('Skipping note with invalid frequency:', note.note_number)
+        return
+      }
 
       // Create oscillator for this note
       const oscillator = offlineContext.createOscillator()
@@ -91,6 +120,12 @@ export async function exportToWav(
       const startTime = note.start_time
       const endTime = note.start_time + note.duration
       const volume = velocity * trackVolume
+
+      // Ensure all time values are valid
+      if (!isFinite(startTime) || !isFinite(endTime) || !isFinite(volume)) {
+        console.warn('Skipping note with invalid parameters')
+        return
+      }
 
       // Attack
       gainNode.gain.setValueAtTime(0, startTime)
