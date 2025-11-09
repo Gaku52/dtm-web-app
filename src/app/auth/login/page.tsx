@@ -50,21 +50,21 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 px-4">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 px-4 py-8">
+      <div className="max-w-md w-full space-y-6 sm:space-y-8">
         <div className="text-center">
-          <h1 className="text-5xl font-extrabold mb-3">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold mb-2 sm:mb-3">
             <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
               DTM Web App
             </span>
           </h1>
-          <p className="text-xl text-gray-300">ログインしてプロジェクトを始めましょう</p>
+          <p className="text-lg sm:text-xl text-gray-300">ログインしてプロジェクトを始めましょう</p>
         </div>
 
-        <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white border-opacity-20">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 sm:p-8 border border-white border-opacity-20">
+          <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+              <label htmlFor="email" className="block text-sm sm:text-base font-medium text-gray-300">
                 メールアドレス
               </label>
               <input
@@ -73,17 +73,17 @@ function LoginForm() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent backdrop-blur-sm"
+                className="mt-1 block w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent backdrop-blur-sm text-sm sm:text-base"
                 placeholder="you@example.com"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+                <label htmlFor="password" className="block text-sm sm:text-base font-medium text-gray-300">
                   パスワード
                 </label>
-                <Link href="/auth/reset-password" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+                <Link href="/auth/reset-password" className="text-xs sm:text-sm text-blue-400 hover:text-blue-300 transition-colors">
                   パスワードを忘れた場合
                 </Link>
               </div>
@@ -93,13 +93,13 @@ function LoginForm() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent backdrop-blur-sm"
+                className="mt-1 block w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent backdrop-blur-sm text-sm sm:text-base"
                 placeholder="••••••••"
               />
             </div>
 
             {error && (
-              <div className="bg-red-500 bg-opacity-20 backdrop-blur-sm border border-red-400 border-opacity-30 text-red-200 px-4 py-3 rounded-lg">
+              <div className="bg-red-500 bg-opacity-20 backdrop-blur-sm border border-red-400 border-opacity-30 text-red-200 px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg text-sm sm:text-base">
                 {error}
               </div>
             )}
@@ -107,18 +107,18 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02]"
+              className="w-full flex justify-center py-2.5 sm:py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm sm:text-base font-bold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02]"
             >
               {loading ? 'ログイン中...' : 'ログイン'}
             </button>
           </form>
 
-          <div className="mt-6">
+          <div className="mt-5 sm:mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-white border-opacity-20"></div>
               </div>
-              <div className="relative flex justify-center text-sm">
+              <div className="relative flex justify-center text-xs sm:text-sm">
                 <span className="px-2 bg-gray-800 bg-opacity-50 text-gray-300">または</span>
               </div>
             </div>
@@ -126,9 +126,9 @@ function LoginForm() {
             <button
               onClick={handleGoogleSignIn}
               disabled={loading}
-              className="mt-6 w-full flex items-center justify-center gap-3 py-3 px-4 border border-white border-opacity-30 rounded-lg shadow-sm text-sm font-medium text-white bg-white bg-opacity-10 backdrop-blur-sm hover:bg-opacity-20 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="mt-5 sm:mt-6 w-full flex items-center justify-center gap-2 sm:gap-3 py-2.5 sm:py-3 px-4 border border-white border-opacity-30 rounded-lg shadow-sm text-sm sm:text-base font-medium text-white bg-white bg-opacity-10 backdrop-blur-sm hover:bg-opacity-20 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -150,8 +150,8 @@ function LoginForm() {
             </button>
           </div>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-300">
+          <div className="mt-5 sm:mt-6 text-center">
+            <p className="text-xs sm:text-sm text-gray-300">
               アカウントをお持ちでない方は{' '}
               <Link href="/auth/signup" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
                 新規登録
@@ -161,8 +161,8 @@ function LoginForm() {
         </div>
 
         <div className="text-center">
-          <Link href="/" className="text-sm text-gray-300 hover:text-white transition-colors inline-flex items-center gap-1">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <Link href="/" className="text-xs sm:text-sm text-gray-300 hover:text-white transition-colors inline-flex items-center gap-1">
+            <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             ホームに戻る
@@ -177,7 +177,7 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
-        <div className="text-white text-xl">読み込み中...</div>
+        <div className="text-white text-lg sm:text-xl">読み込み中...</div>
       </div>
     }>
       <LoginForm />
