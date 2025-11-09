@@ -196,6 +196,26 @@ export default function PianoRoll({
     }
   }
 
+  // クリックされた位置にあるノートを見つける
+  const findNoteAtPosition = (x: number, y: number): Note | null => {
+    const noteIndex = Math.floor(y / NOTE_HEIGHT)
+    const pitch = LOWEST_NOTE + (TOTAL_NOTES - noteIndex - 1)
+
+    // クリック位置にあるノートを検索
+    return notes.find((note) => {
+      const noteX = note.start_time * PIXELS_PER_BEAT
+      const noteWidth = note.duration * PIXELS_PER_BEAT
+      const noteY = (TOTAL_NOTES - (note.pitch - LOWEST_NOTE) - 1) * NOTE_HEIGHT
+
+      return (
+        x >= noteX &&
+        x <= noteX + noteWidth &&
+        y >= noteY &&
+        y <= noteY + NOTE_HEIGHT
+      )
+    }) || null
+  }
+
   const handleCanvasClick = async (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!selectedTrackId) return
 
@@ -245,6 +265,39 @@ export default function PianoRoll({
     }
   }
 
+  const handleCanvasRightClick = async (e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault() // デフォルトのコンテキストメニューを無効化
+
+    if (!selectedTrackId) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+
+    // クリック位置にあるノートを探す
+    const noteToDelete = findNoteAtPosition(x, y)
+
+    if (noteToDelete) {
+      try {
+        const { error } = await supabase
+          .from('notes')
+          .delete()
+          .eq('id', noteToDelete.id)
+
+        if (error) throw error
+
+        // ノートリストから削除
+        setNotes(notes.filter((n) => n.id !== noteToDelete.id))
+        console.log('🗑️ Note deleted:', noteToDelete.id)
+      } catch (error) {
+        console.error('Error deleting note:', error)
+      }
+    }
+  }
+
   if (!selectedTrackId) {
     return (
       <div className="flex-1 bg-gray-900 flex items-center justify-center">
@@ -285,7 +338,7 @@ export default function PianoRoll({
       <div className="h-10 bg-gray-800 border-b border-gray-700 flex items-center px-4">
         <div className="w-16"></div> {/* Piano keyboard width spacer */}
         <div className="text-sm text-gray-400">
-          クリックしてノートを追加 | 64分音符単位でスナップ
+          左クリック: ノート追加 | 右クリック: ノート削除 | 64分音符単位でスナップ
         </div>
       </div>
 
@@ -324,6 +377,7 @@ export default function PianoRoll({
           <canvas
             ref={canvasRef}
             onClick={handleCanvasClick}
+            onContextMenu={handleCanvasRightClick}
             className="cursor-crosshair"
             style={{
               width: '16000px', // 100小節分 (200px * 4拍 * 20小節) - 大幅に拡大
