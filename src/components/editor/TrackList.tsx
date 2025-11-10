@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { ALL_PRESETS, PRESET_CATEGORIES, getPresetById } from '@/lib/audio/presets'
+import { TONE_JS_SAMPLES } from '@/lib/audio/samplers/tone-js-library'
 
 type TrackType = 'vocal' | 'bass' | 'drums' | 'guitar' | 'piano' | 'synth' | 'strings' | 'brass' | 'woodwind' | 'percussion' | 'fx' | 'instrument'
 
@@ -47,6 +49,7 @@ export default function TrackList({
   const [tracks, setTracks] = useState<Track[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedTrackType, setSelectedTrackType] = useState<TrackType>('piano')
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('piano_bright_grand')
   const [trackToDelete, setTrackToDelete] = useState<string | null>(null)
 
   useEffect(() => {
@@ -77,20 +80,45 @@ export default function TrackList({
 
   const addTrack = async () => {
     try {
-      const config = TRACK_TYPE_CONFIG[selectedTrackType]
-      // 同じタイプのトラック数をカウント
-      const sameTypeCount = tracks.filter(t => t.track_type === selectedTrackType).length
+      // Get preset info
+      const preset = getPresetById(selectedPresetId)
+      if (!preset) {
+        console.error('Preset not found:', selectedPresetId)
+        return
+      }
+
+      // 同じプリセットのトラック数をカウント
+      const samePresetCount = tracks.filter(t => t.instrument === selectedPresetId).length
+
+      // Get category config for icon and color
+      const categoryConfig = PRESET_CATEGORIES.find(c => c.id === preset.category)
+      const defaultIcon = categoryConfig?.icon || '🎵'
+
+      // Color mapping for categories
+      const categoryColors: Record<string, string> = {
+        lead: '#EC4899',
+        bass: '#10B981',
+        pad: '#8B5CF6',
+        piano: '#3B82F6',
+        brass: '#FBBF24',
+        strings: '#F97316',
+        fx: '#06B6D4',
+        drums: '#F59E0B',
+        vocal: '#EF4444',
+        synth: '#EC4899'
+      }
+      const defaultColor = categoryColors[preset.category] || '#60A5FA'
 
       const { data, error} = await supabase
         .from('tracks')
         .insert([
           {
             project_id: projectId,
-            name: `${config.label} ${sameTypeCount + 1}`,
-            instrument: selectedTrackType,
-            track_type: selectedTrackType,
-            icon: config.icon,
-            color: config.defaultColor,
+            name: samePresetCount === 0 ? preset.name : `${preset.name} ${samePresetCount + 1}`,
+            instrument: selectedPresetId, // Store preset ID
+            track_type: preset.category as TrackType,
+            icon: defaultIcon,
+            color: defaultColor,
             volume: 80,
             muted: false,
             solo: false,
@@ -196,17 +224,36 @@ export default function TrackList({
     <div className="w-48 bg-gray-800 border-r border-gray-700 flex flex-col">
       {/* Header */}
       <div className="p-3 border-b border-gray-700">
-        <h3 className="text-xs font-semibold text-gray-300 mb-2">トラック</h3>
+        <h3 className="text-xs font-semibold text-gray-300 mb-2">トラック追加</h3>
         <select
-          value={selectedTrackType}
-          onChange={(e) => setSelectedTrackType(e.target.value as TrackType)}
-          className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-xs mb-2 focus:outline-none focus:border-blue-500"
+          value={selectedPresetId}
+          onChange={(e) => setSelectedPresetId(e.target.value)}
+          className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-xs mb-2 focus:outline-none focus:border-blue-500 max-h-32"
         >
-          {(Object.keys(TRACK_TYPE_CONFIG) as TrackType[]).map((type) => (
-            <option key={type} value={type}>
-              {TRACK_TYPE_CONFIG[type].icon} {TRACK_TYPE_CONFIG[type].label}
-            </option>
-          ))}
+          {/* Tone.js Samples */}
+          <optgroup label="🎹 リアル楽器 (Tone.js)">
+            {TONE_JS_SAMPLES.map((sample) => (
+              <option key={sample.id} value={sample.id}>
+                {sample.name}
+              </option>
+            ))}
+          </optgroup>
+
+          {/* Premium Presets by Category */}
+          {PRESET_CATEGORIES.map((category) => {
+            const presetsInCategory = ALL_PRESETS.filter(p => p.category === category.id)
+            if (presetsInCategory.length === 0) return null
+
+            return (
+              <optgroup key={category.id} label={`${category.icon} ${category.name}`}>
+                {presetsInCategory.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {preset.name}
+                  </option>
+                ))}
+              </optgroup>
+            )
+          })}
         </select>
         <button
           onClick={addTrack}
@@ -215,7 +262,7 @@ export default function TrackList({
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          追加
+          トラックを追加
         </button>
       </div>
 
@@ -269,7 +316,19 @@ export default function TrackList({
 
               <div className="flex items-center gap-1.5 text-[10px] text-gray-400 ml-5">
                 <span className="capitalize truncate">
-                  {track.track_type ? TRACK_TYPE_CONFIG[track.track_type].label : track.instrument}
+                  {(() => {
+                    // Try to get preset name
+                    const preset = getPresetById(track.instrument)
+                    if (preset) return preset.name
+
+                    // Fallback to old track type config
+                    if (track.track_type && TRACK_TYPE_CONFIG[track.track_type]) {
+                      return TRACK_TYPE_CONFIG[track.track_type].label
+                    }
+
+                    // Last resort: display instrument field
+                    return track.instrument
+                  })()}
                 </span>
                 <span>•</span>
                 <span>{track.volume}%</span>
