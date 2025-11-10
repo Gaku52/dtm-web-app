@@ -5,7 +5,7 @@ import { SynthPreset, getPresetById } from '@/lib/audio/presets'
 import { AdvancedSynthVoice } from '@/lib/audio/advanced-synth-engine'
 import { ToneJsSample, getToneJsSampleById } from '@/lib/audio/samplers/tone-js-library'
 import { getToneSampler } from '@/lib/audio/samplers/tone-sampler'
-import { start as toneStart } from 'tone'
+import * as Tone from 'tone'
 
 interface Note {
   id: string
@@ -68,27 +68,34 @@ export function useAudioEngine(tempo: number = 120) {
       // AudioContextを再開（ブラウザのAutoplay policy対応）
       if (ctx.state === 'suspended') {
         await ctx.resume()
-        await toneStart()
+        await Tone.start()
         console.log('🎵 Audio engines resumed')
       }
 
       // MIDI番号から周波数を計算 (A4 = 440Hz = MIDI 69)
       const frequency = 440 * Math.pow(2, (pitch - 69) / 12)
 
+      console.log(`🎹 playNote called with:`, {
+        pitch,
+        duration,
+        velocity,
+        instrumentOrPresetId
+      })
+
       // 1. Check if it's a Tone.js sampler
       const toneJsSample = getToneJsSampleById(instrumentOrPresetId)
       if (toneJsSample) {
-        console.log(`🎹 Playing Tone.js sample: ${toneJsSample.name} - MIDI ${pitch}`)
+        console.log(`🎹 ✅ MATCH: Tone.js sample: ${toneJsSample.name}`)
         const sampler = getToneSampler(toneJsSample)
         await sampler.playNote(pitch, duration, velocity)
-        console.log('✅ Note played with Tone.js sampler')
         return
       }
 
       // 2. Check if it's a premium preset
       const preset = getPresetById(instrumentOrPresetId)
       if (preset) {
-        console.log(`🎵 Playing premium preset: ${preset.name} - MIDI ${pitch} (${frequency.toFixed(2)}Hz)`)
+        console.log(`🎵 ✅ MATCH: Premium preset: ${preset.name} (ID: ${preset.id})`)
+        console.log(`   Category: ${preset.category}, Oscillator: ${preset.oscillatorType}`)
         const voice = new AdvancedSynthVoice(ctx, preset, frequency, velocity)
         voice.connect(ctx.destination)
         await voice.start(ctx.currentTime, duration)
@@ -98,12 +105,12 @@ export function useAudioEngine(tempo: number = 120) {
           voice.disconnect()
         }, (duration + 5) * 1000)
 
-        console.log('✅ Note played with advanced synth engine')
         return
       }
 
       // 3. Fallback: use default preset
-      console.warn(`⚠️ Instrument/preset "${instrumentOrPresetId}" not found, using default`)
+      console.error(`❌ MISMATCH: Instrument/preset "${instrumentOrPresetId}" not found!`)
+      console.log('⚠️ Using fallback: piano_bright_grand')
       const defaultPreset = getPresetById('piano_bright_grand') || getPresetById('lead_supersaw_epic')
       if (defaultPreset) {
         const voice = new AdvancedSynthVoice(ctx, defaultPreset, frequency, velocity)
@@ -112,7 +119,6 @@ export function useAudioEngine(tempo: number = 120) {
         setTimeout(() => {
           voice.disconnect()
         }, (duration + 5) * 1000)
-        console.log('✅ Note played with default preset')
       }
     } catch (error) {
       console.error('❌ Error playing note:', error)

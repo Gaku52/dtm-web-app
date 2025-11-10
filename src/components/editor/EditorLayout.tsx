@@ -73,6 +73,11 @@ export default function EditorLayout({
       if (tracksError) throw tracksError
 
       if (tracks && tracks.length > 0) {
+        console.log('📊 Track→Instrument mapping:')
+        tracks.forEach(t => {
+          console.log(`   Track ${t.id}: ${t.instrument}`)
+        })
+
         // トラックIDと楽器のマッピングを作成
         const trackInstrumentMap = new Map(
           tracks.map(t => [t.id, t.instrument])
@@ -94,6 +99,13 @@ export default function EditorLayout({
         }))
 
         console.log('📝 Loaded', notesWithInstruments.length, 'notes for playback')
+        if (notesWithInstruments.length > 0) {
+          console.log('📝 Sample note:', {
+            pitch: notesWithInstruments[0].pitch,
+            track_id: notesWithInstruments[0].track_id,
+            instrument: notesWithInstruments[0].instrument
+          })
+        }
         setAllNotes(notesWithInstruments)
         scheduleNotes(notesWithInstruments)
       }
@@ -162,9 +174,16 @@ export default function EditorLayout({
             // トラック情報を取得
             const { data } = await supabase
               .from('tracks')
-              .select('id, instrument, track_type')
+              .select('id, instrument, track_type, name')
               .eq('id', trackId)
               .single()
+
+            console.log('🎵 Selected track:', {
+              name: data?.name,
+              instrument: data?.instrument,
+              track_type: data?.track_type
+            })
+
             setSelectedTrack(data)
           }}
         />

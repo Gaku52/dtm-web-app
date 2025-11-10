@@ -1,11 +1,11 @@
 // Tone.js Sampler Integration
 // Provides high-quality sampled instruments
 
-import { Sampler, now } from 'tone'
+import * as Tone from 'tone'
 import { ToneJsSample } from './tone-js-library'
 
 export class ToneSampler {
-  private sampler: Sampler | null = null
+  private sampler: Tone.Sampler | null = null
   private sample: ToneJsSample
   private isLoaded: boolean = false
   private loadPromise: Promise<void> | null = null
@@ -26,7 +26,7 @@ export class ToneSampler {
           urls[note] = `${note}.mp3`
         })
 
-        this.sampler = new Sampler({
+        this.sampler = new Tone.Sampler({
           urls,
           baseUrl: this.sample.baseUrl,
           onload: () => {
@@ -65,7 +65,7 @@ export class ToneSampler {
     // Convert MIDI number to note name
     const noteName = this.midiToNoteName(pitch)
     const velocityNormalized = velocity / 127
-    const playTime = time ?? now()
+    const playTime = time ?? Tone.now()
 
     // Play the note
     this.sampler.triggerAttackRelease(noteName, duration, playTime, velocityNormalized)

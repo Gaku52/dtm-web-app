@@ -83,9 +83,15 @@ export default function TrackList({
       // Get preset info
       const preset = getPresetById(selectedPresetId)
       if (!preset) {
-        console.error('Preset not found:', selectedPresetId)
+        console.error('❌ Preset not found:', selectedPresetId)
         return
       }
+
+      console.log('✅ Adding track with preset:', {
+        id: selectedPresetId,
+        name: preset.name,
+        category: preset.category
+      })
 
       // 同じプリセットのトラック数をカウント
       const samePresetCount = tracks.filter(t => t.instrument === selectedPresetId).length
@@ -109,32 +115,39 @@ export default function TrackList({
       }
       const defaultColor = categoryColors[preset.category] || '#60A5FA'
 
+      const trackData = {
+        project_id: projectId,
+        name: samePresetCount === 0 ? preset.name : `${preset.name} ${samePresetCount + 1}`,
+        instrument: selectedPresetId, // Store preset ID
+        track_type: preset.category as TrackType,
+        icon: defaultIcon,
+        color: defaultColor,
+        volume: 80,
+        muted: false,
+        solo: false,
+        order_index: tracks.length,
+      }
+
+      console.log('💾 Saving track to database:', {
+        name: trackData.name,
+        instrument: trackData.instrument,
+        track_type: trackData.track_type
+      })
+
       const { data, error} = await supabase
         .from('tracks')
-        .insert([
-          {
-            project_id: projectId,
-            name: samePresetCount === 0 ? preset.name : `${preset.name} ${samePresetCount + 1}`,
-            instrument: selectedPresetId, // Store preset ID
-            track_type: preset.category as TrackType,
-            icon: defaultIcon,
-            color: defaultColor,
-            volume: 80,
-            muted: false,
-            solo: false,
-            order_index: tracks.length,
-          },
-        ])
+        .insert([trackData])
         .select()
         .single()
 
       if (error) throw error
       if (data) {
+        console.log('✅ Track saved successfully:', data)
         setTracks([...tracks, data])
         onSelectTrack(data.id)
       }
     } catch (error) {
-      console.error('Error adding track:', error)
+      console.error('❌ Error adding track:', error)
     }
   }
 
