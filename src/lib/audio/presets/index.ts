@@ -1,11 +1,11 @@
-// EDM Preset Library - 1,000 Professional Presets
+// EDM Preset Library - Premium Hand-Crafted Presets
 // Designed for Calvin Harris & Alesso style production
 
-import { generateAllPresets, PRESET_COUNT } from './generator'
+import { PREMIUM_PRESETS, PREMIUM_PRESET_COUNT } from './premium-presets'
 import { SynthPreset, PresetCategory, PresetLibrary } from './types'
 
-// Generate all presets
-const ALL_PRESETS = generateAllPresets()
+// Use premium hand-crafted presets
+const ALL_PRESETS = PREMIUM_PRESETS
 
 // Category definitions
 export const PRESET_CATEGORIES = [
@@ -106,17 +106,9 @@ export function getRandomPreset(category?: PresetCategory): SynthPreset {
 }
 
 // Export preset count for debugging
-console.log('🎵 EDM Preset Library Loaded:')
-console.log(`   Total Presets: ${ALL_PRESETS.length}`)
-console.log(`   Lead: ${PRESET_COUNT.lead}`)
-console.log(`   Bass: ${PRESET_COUNT.bass}`)
-console.log(`   Pad: ${PRESET_COUNT.pad}`)
-console.log(`   Piano: ${PRESET_COUNT.piano}`)
-console.log(`   Brass: ${PRESET_COUNT.brass}`)
-console.log(`   Strings: ${PRESET_COUNT.strings}`)
-console.log(`   FX: ${PRESET_COUNT.fx}`)
-console.log(`   Drums: ${PRESET_COUNT.drums}`)
-console.log(`   Vocal: ${PRESET_COUNT.vocal}`)
+console.log('🎵 Premium EDM Preset Library Loaded:')
+console.log(`   Total Presets: ${PREMIUM_PRESET_COUNT} (Hand-Crafted Quality)`)
+console.log(`   Each preset is professionally designed for maximum impact`)
 
-export { ALL_PRESETS, PRESET_COUNT }
+export { ALL_PRESETS, PREMIUM_PRESET_COUNT as PRESET_COUNT }
 export type { SynthPreset, PresetCategory, PresetLibrary }

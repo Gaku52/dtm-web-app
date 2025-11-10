@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { SynthPreset, getPresetById } from '@/lib/audio/presets'
+import { AdvancedSynthVoice } from '@/lib/audio/advanced-synth-engine'
 
 interface Note {
   id: string
@@ -221,12 +222,27 @@ export function useAudioEngine(tempo: number = 120) {
 
       // MIDI番号から周波数を計算 (A4 = 440Hz = MIDI 69)
       const frequency = 440 * Math.pow(2, (pitch - 69) / 12)
-      const volume = (velocity / 127) * config.volume
 
       const displayName = preset ? preset.name : (instrumentOrPreset as string)
       console.log(`🎵 Playing ${displayName}: MIDI ${pitch} (${frequency.toFixed(2)}Hz), duration: ${duration}s, velocity: ${velocity}`)
 
-      // オシレーター（音源）を作成 - レイヤリング対応
+      // If we have a full SynthPreset, use advanced engine
+      if (preset && 'lfo' in preset) {
+        const voice = new AdvancedSynthVoice(ctx, preset, frequency, velocity)
+        voice.connect(ctx.destination)
+        await voice.start(ctx.currentTime, duration)
+
+        // Cleanup after sound finishes
+        setTimeout(() => {
+          voice.disconnect()
+        }, (duration + 5) * 1000)
+
+        console.log('✅ Note played with advanced engine')
+        return
+      }
+
+      // Fallback to basic engine for backward compatibility
+      const volume = (velocity / 127) * config.volume
       const oscillator = ctx.createOscillator()
       const oscillator2 = config.oscillatorType2 ? ctx.createOscillator() : null
       const gainNode = ctx.createGain()
@@ -294,7 +310,7 @@ export function useAudioEngine(tempo: number = 120) {
       oscillator.stop(releaseStart + releaseTime)
       if (oscillator2) oscillator2.stop(releaseStart + releaseTime)
 
-      console.log('✅ Note played successfully')
+      console.log('✅ Note played successfully (basic engine)')
     } catch (error) {
       console.error('❌ Error playing note:', error)
     }
