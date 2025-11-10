@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { SynthPreset, getPresetById } from '@/lib/audio/presets'
 
 interface Note {
   id: string
@@ -11,7 +12,7 @@ interface Note {
   track_id?: string
 }
 
-export type InstrumentType = 'piano' | 'synth' | 'bass' | 'drums' | 'guitar' | 'strings' | 'brass' | 'woodwind' | 'vocal' | 'percussion' | 'fx' | 'instrument'
+export type InstrumentType = 'piano' | 'synth' | 'bass' | 'drums' | 'guitar' | 'strings' | 'brass' | 'woodwind' | 'vocal' | 'percussion' | 'fx' | 'instrument' | 'lead' | 'pad'
 
 // 楽器タイプごとの音色設定
 const INSTRUMENT_CONFIGS: Record<InstrumentType, {
@@ -122,6 +123,24 @@ const INSTRUMENT_CONFIGS: Record<InstrumentType, {
     releaseTime: 0.2,
     volume: 0.3,
   },
+  lead: {
+    oscillatorType: 'sawtooth',
+    attackTime: 0.02,
+    decayTime: 0.15,
+    sustainLevel: 0.6,
+    releaseTime: 0.2,
+    volume: 0.35,
+    detune: 8,
+  },
+  pad: {
+    oscillatorType: 'sine',
+    attackTime: 0.5,
+    decayTime: 0.3,
+    sustainLevel: 0.7,
+    releaseTime: 1.5,
+    volume: 0.25,
+    detune: 10,
+  },
 }
 
 export function useAudioEngine(tempo: number = 120) {
@@ -155,7 +174,12 @@ export function useAudioEngine(tempo: number = 120) {
     }
   }, [tempo])
 
-  const playNote = async (pitch: number, duration: number = 0.5, velocity: number = 100, instrumentType: InstrumentType = 'piano') => {
+  const playNote = async (
+    pitch: number,
+    duration: number = 0.5,
+    velocity: number = 100,
+    instrumentOrPreset: InstrumentType | SynthPreset | string = 'piano'
+  ) => {
     if (!audioContextRef.current) {
       console.error('❌ AudioContext not initialized')
       return
@@ -170,20 +194,44 @@ export function useAudioEngine(tempo: number = 120) {
         console.log('🎵 AudioContext resumed')
       }
 
-      // 楽器設定を取得
-      const config = INSTRUMENT_CONFIGS[instrumentType] || INSTRUMENT_CONFIGS.piano
+      // プリセットまたは楽器タイプから設定を取得
+      let preset: SynthPreset | null = null
+      let config: any
+
+      if (typeof instrumentOrPreset === 'string') {
+        // プリセットIDかもしれないので検索
+        const foundPreset = getPresetById(instrumentOrPreset)
+        if (foundPreset) {
+          preset = foundPreset
+        } else {
+          // 楽器タイプとして扱う
+          config = INSTRUMENT_CONFIGS[instrumentOrPreset as InstrumentType] || INSTRUMENT_CONFIGS.piano
+        }
+      } else if (typeof instrumentOrPreset === 'object' && 'oscillatorType' in instrumentOrPreset) {
+        // SynthPresetオブジェクト
+        preset = instrumentOrPreset
+      } else {
+        config = INSTRUMENT_CONFIGS[instrumentOrPreset as InstrumentType] || INSTRUMENT_CONFIGS.piano
+      }
+
+      // プリセットがあれば使用、なければ従来のconfig
+      if (preset) {
+        config = preset
+      }
 
       // MIDI番号から周波数を計算 (A4 = 440Hz = MIDI 69)
       const frequency = 440 * Math.pow(2, (pitch - 69) / 12)
       const volume = (velocity / 127) * config.volume
 
-      console.log(`🎵 Playing ${instrumentType}: MIDI ${pitch} (${frequency.toFixed(2)}Hz), duration: ${duration}s, velocity: ${velocity}`)
+      const displayName = preset ? preset.name : (instrumentOrPreset as string)
+      console.log(`🎵 Playing ${displayName}: MIDI ${pitch} (${frequency.toFixed(2)}Hz), duration: ${duration}s, velocity: ${velocity}`)
 
-      // オシレーター（音源）を作成
+      // オシレーター（音源）を作成 - レイヤリング対応
       const oscillator = ctx.createOscillator()
+      const oscillator2 = config.oscillatorType2 ? ctx.createOscillator() : null
       const gainNode = ctx.createGain()
 
-      // オシレーターを設定（楽器タイプに応じた波形）
+      // 第1オシレーターを設定
       oscillator.type = config.oscillatorType
       oscillator.frequency.value = frequency
 
@@ -192,7 +240,25 @@ export function useAudioEngine(tempo: number = 120) {
         oscillator.detune.value = config.detune
       }
 
-      // エンベロープ（ADSR）を設定（楽器タイプに応じた値）
+      // 第2オシレーター（レイヤリング）
+      if (oscillator2 && config.oscillatorType2) {
+        oscillator2.type = config.oscillatorType2
+        oscillator2.frequency.value = frequency
+        if (config.detune) {
+          oscillator2.detune.value = -config.detune // 逆方向にデチューン
+        }
+      }
+
+      // フィルター（オプション）
+      let filterNode: BiquadFilterNode | null = null
+      if (config.filterCutoff) {
+        filterNode = ctx.createBiquadFilter()
+        filterNode.type = config.filterType || 'lowpass'
+        filterNode.frequency.value = config.filterCutoff
+        filterNode.Q.value = (config.filterResonance || 0) * 30 // Resonance scaling
+      }
+
+      // エンベロープ（ADSR）を設定
       const now = ctx.currentTime
       const { attackTime, decayTime, sustainLevel, releaseTime } = config
 
@@ -212,12 +278,21 @@ export function useAudioEngine(tempo: number = 120) {
       gainNode.gain.linearRampToValueAtTime(0, releaseStart + releaseTime)
 
       // オーディオグラフを接続
-      oscillator.connect(gainNode)
+      if (filterNode) {
+        oscillator.connect(filterNode)
+        if (oscillator2) oscillator2.connect(filterNode)
+        filterNode.connect(gainNode)
+      } else {
+        oscillator.connect(gainNode)
+        if (oscillator2) oscillator2.connect(gainNode)
+      }
       gainNode.connect(ctx.destination)
 
       // 再生
       oscillator.start(now)
+      if (oscillator2) oscillator2.start(now)
       oscillator.stop(releaseStart + releaseTime)
+      if (oscillator2) oscillator2.stop(releaseStart + releaseTime)
 
       console.log('✅ Note played successfully')
     } catch (error) {
