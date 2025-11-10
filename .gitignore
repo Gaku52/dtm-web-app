@@ -36,3 +36,6 @@ yarn-error.log*
 next-env.d.ts
 supabase/.temp/
 test-results/
+
+# Notion learning record scripts (contains API keys)
+add-learning-record-*.js

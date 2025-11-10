@@ -17,7 +17,8 @@
 - 🎹 **20+ Instruments** - Professional sound library powered by Supabase Storage
 - 📊 **Waveform Display** - Visual feedback of your composition
 - 💾 **Auto-Save** - Never lose your work
-- 📤 **MIDI Export** - Export to other DAWs
+- 📤 **Audio Export** - Export to WAV/MP3 (completely free, browser-based)
+- 🗑️ **Project Management** - Create, delete, and organize projects
 - 🌐 **Cross-Platform** - Works on desktop, tablet, and mobile
 
 ---
@@ -101,7 +102,8 @@ See [docs/AUTO_LOG_SYSTEM.md](./docs/AUTO_LOG_SYSTEM.md) for details.
 
 ### Audio Engine
 - **Core**: Web Audio API
-- **Library**: Tone.js
+- **Synthesis**: Tone.js
+- **MP3 Encoding**: lamejs (browser-based)
 - **Waveform**: WaveSurfer.js
 
 ### Backend

@@ -254,7 +254,7 @@ function audioBufferToWav(buffer: AudioBuffer): Blob {
   // Write PCM samples
   for (let i = 0; i < data.length; i++) {
     const sample = Math.max(-1, Math.min(1, data[i]))
-    const int16 = sample < 0 ? sample * 0x8000 : sample * 0x7FFF
+    const int16 = Math.round(sample < 0 ? sample * 0x8000 : sample * 0x7FFF)
     view.setInt16(offset, int16, true)
     offset += 2
   }
@@ -289,8 +289,11 @@ async function encodeToMp3(
   const right = new Int16Array(rightChannel.length)
 
   for (let i = 0; i < leftChannel.length; i++) {
-    left[i] = leftChannel[i] * 0x7FFF
-    right[i] = rightChannel[i] * 0x7FFF
+    // Clamp values to [-1, 1] range and convert to int16 with proper rounding
+    const leftSample = Math.max(-1, Math.min(1, leftChannel[i]))
+    const rightSample = Math.max(-1, Math.min(1, rightChannel[i]))
+    left[i] = Math.round(leftSample < 0 ? leftSample * 0x8000 : leftSample * 0x7FFF)
+    right[i] = Math.round(rightSample < 0 ? rightSample * 0x8000 : rightSample * 0x7FFF)
   }
 
   // Encode in chunks
@@ -325,7 +328,7 @@ async function encodeToMp3(
     offset += arr.length
   })
 
-  return new Blob([mp3Buffer], { type: 'audio/mp3' })
+  return new Blob([mp3Buffer], { type: 'audio/mpeg' })
 }
 
 // Download blob as file
