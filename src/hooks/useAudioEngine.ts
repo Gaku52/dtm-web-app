@@ -14,6 +14,7 @@ interface Note {
   duration: number
   velocity: number
   track_id?: string
+  instrument?: string // プリセットID
 }
 
 // Legacy type for backward compatibility
@@ -154,7 +155,8 @@ export function useAudioEngine(tempo: number = 120) {
       const noteStartTime = note.start_time - playbackStartTimeRef.current
       if (noteStartTime >= 0) {
         const audioTime = audioStartTimeRef.current + noteStartTime
-        scheduleNoteAtTime(note, audioTime)
+        const presetId = note.instrument || 'piano_bright_grand'
+        scheduleNoteAtTime(note, audioTime, presetId)
       }
     })
 

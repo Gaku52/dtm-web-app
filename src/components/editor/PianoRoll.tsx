@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import type { InstrumentType } from '@/hooks/useAudioEngine'
 
 interface Note {
   id: string
@@ -20,8 +19,8 @@ interface PianoRollProps {
   isPlaying: boolean
   tempo?: number
   timeSignature?: string
-  instrumentType?: InstrumentType
-  onPlayNote?: (pitch: number, duration?: number, velocity?: number, instrumentType?: InstrumentType) => Promise<void>
+  instrumentType?: string
+  onPlayNote?: (pitch: number, duration?: number, velocity?: number, instrumentType?: string) => Promise<void>
 }
 
 // Grid constants
@@ -37,7 +36,7 @@ export default function PianoRoll({
   isPlaying,
   tempo = 120,
   timeSignature = '4/4',
-  instrumentType = 'piano',
+  instrumentType = 'piano_bright_grand',
   onPlayNote,
 }: PianoRollProps) {
   const [notes, setNotes] = useState<Note[]>([])

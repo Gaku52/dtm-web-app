@@ -5,7 +5,7 @@ import EditorHeader from './EditorHeader'
 import EditorToolbar from './EditorToolbar'
 import TrackList from './TrackList'
 import PianoRoll from './PianoRoll'
-import { useAudioEngine, type InstrumentType } from '@/hooks/useAudioEngine'
+import { useAudioEngine } from '@/hooks/useAudioEngine'
 import { supabase } from '@/lib/supabase/client'
 
 interface Project {
@@ -29,6 +29,7 @@ interface Note {
   start_time: number
   duration: number
   velocity: number
+  instrument?: string // プリセットID
 }
 
 interface Track {
@@ -63,15 +64,20 @@ export default function EditorLayout({
 
   const loadAllNotes = async () => {
     try {
-      // プロジェクトに属する全トラックのノートを取得
+      // プロジェクトに属する全トラックとその楽器情報を取得
       const { data: tracks, error: tracksError } = await supabase
         .from('tracks')
-        .select('id')
+        .select('id, instrument')
         .eq('project_id', project.id)
 
       if (tracksError) throw tracksError
 
       if (tracks && tracks.length > 0) {
+        // トラックIDと楽器のマッピングを作成
+        const trackInstrumentMap = new Map(
+          tracks.map(t => [t.id, t.instrument])
+        )
+
         const trackIds = tracks.map(t => t.id)
 
         const { data: notes, error: notesError } = await supabase
@@ -81,9 +87,15 @@ export default function EditorLayout({
 
         if (notesError) throw notesError
 
-        console.log('📝 Loaded', notes?.length || 0, 'notes for playback')
-        setAllNotes(notes || [])
-        scheduleNotes(notes || [])
+        // 各ノートに楽器情報を追加
+        const notesWithInstruments = (notes || []).map(note => ({
+          ...note,
+          instrument: trackInstrumentMap.get(note.track_id) || 'piano_bright_grand'
+        }))
+
+        console.log('📝 Loaded', notesWithInstruments.length, 'notes for playback')
+        setAllNotes(notesWithInstruments)
+        scheduleNotes(notesWithInstruments)
       }
     } catch (error) {
       console.error('Error loading notes:', error)
@@ -165,7 +177,7 @@ export default function EditorLayout({
           isPlaying={isPlaying}
           tempo={project.tempo}
           timeSignature={project.time_signature}
-          instrumentType={(selectedTrack?.track_type || selectedTrack?.instrument || 'piano') as InstrumentType}
+          instrumentType={selectedTrack?.instrument || 'piano_bright_grand'}
           onPlayNote={playNote}
         />
       </div>
