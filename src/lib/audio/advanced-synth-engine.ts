@@ -2,6 +2,8 @@
 // Implements LFO, Effects, Modulation, and Complex Synthesis
 
 import { SynthPreset } from './presets/types'
+import { loadImpulseResponse, getDefaultIR } from './ir-library'
+import { getWavetableById, createPeriodicWave } from './wavetable-library'
 
 export class AdvancedSynthVoice {
   private ctx: AudioContext
@@ -9,9 +11,13 @@ export class AdvancedSynthVoice {
   private frequency: number
   private velocity: number
 
-  // Audio nodes
-  private oscillator1: OscillatorNode | null = null
-  private oscillator2: OscillatorNode | null = null
+  // Audio nodes - Unison support
+  private unisonVoices: Array<{
+    oscillator1: OscillatorNode
+    oscillator2?: OscillatorNode
+    gain: GainNode
+    panner: StereoPannerNode
+  }> = []
   private noiseSource: AudioBufferSourceNode | null = null
   private noiseBuffer: AudioBuffer | null = null
 
@@ -76,19 +82,12 @@ export class AdvancedSynthVoice {
     return curve as Float32Array<ArrayBuffer>
   }
 
-  private async createSimpleReverb(): Promise<AudioBuffer> {
-    const rate = this.ctx.sampleRate
-    const length = rate * (this.preset.reverb?.decay || 2)
-    const impulse = this.ctx.createBuffer(2, length, rate)
-
-    for (let channel = 0; channel < 2; channel++) {
-      const data = impulse.getChannelData(channel)
-      for (let i = 0; i < length; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2)
-      }
-    }
-
-    return impulse
+  private async createProfessionalReverb(): Promise<AudioBuffer> {
+    // Use professional impulse response instead of random noise
+    const defaultIR = getDefaultIR()
+    const impulseResponse = await loadImpulseResponse(this.ctx, defaultIR)
+    console.log(`🎧 Using professional IR: ${defaultIR.name}`)
+    return impulseResponse
   }
 
   async start(time: number, duration: number) {
@@ -96,24 +95,68 @@ export class AdvancedSynthVoice {
     const endTime = time + duration
     const volume = (this.velocity / 127) * this.preset.volume
 
-    // === OSCILLATORS ===
-    this.oscillator1 = this.ctx.createOscillator()
-    this.oscillator1.type = this.preset.oscillatorType
-    this.oscillator1.frequency.value = this.frequency * Math.pow(2, (this.preset.octave || 0))
+    // === UNISON OSCILLATORS ===
+    const unisonCount = this.preset.unison || 1
+    const spread = this.preset.spread || 0
+    const baseFrequency = this.frequency * Math.pow(2, (this.preset.octave || 0))
 
-    if (this.preset.detune) {
-      this.oscillator1.detune.value = this.preset.detune
-    }
+    console.log(`🎵 Creating ${unisonCount} unison voices with spread ${spread}`)
 
-    // Second oscillator
-    if (this.preset.oscillatorType2) {
-      this.oscillator2 = this.ctx.createOscillator()
-      this.oscillator2.type = this.preset.oscillatorType2
-      this.oscillator2.frequency.value = this.frequency * Math.pow(2, (this.preset.octave || 0))
+    for (let i = 0; i < unisonCount; i++) {
+      // Calculate detune for each voice (creates thickness)
+      const voiceDetune = unisonCount > 1
+        ? ((i / (unisonCount - 1)) - 0.5) * 50 * (this.preset.detune || 10) / 10
+        : 0
 
-      if (this.preset.detune) {
-        this.oscillator2.detune.value = -this.preset.detune // Opposite detune
+      // Calculate stereo pan (creates width)
+      const pan = unisonCount > 1
+        ? ((i / (unisonCount - 1)) - 0.5) * 2 * spread
+        : 0
+
+      // Create oscillator 1
+      const osc1 = this.ctx.createOscillator()
+
+      // Use wavetable if specified, otherwise use standard oscillator type
+      if (this.preset.oscillatorType === 'custom' && this.preset.wavetableId) {
+        const wavetable = getWavetableById(this.preset.wavetableId)
+        if (wavetable) {
+          const periodicWave = createPeriodicWave(this.ctx, wavetable, 0)
+          osc1.setPeriodicWave(periodicWave)
+          console.log(`🌊 Using wavetable: ${wavetable.name}`)
+        } else {
+          console.warn(`⚠️ Wavetable not found: ${this.preset.wavetableId}, using sine`)
+          osc1.type = 'sine'
+        }
+      } else {
+        osc1.type = this.preset.oscillatorType as OscillatorType
       }
+
+      osc1.frequency.value = baseFrequency
+      osc1.detune.value = voiceDetune
+
+      // Create oscillator 2 (if specified)
+      let osc2: OscillatorNode | undefined
+      if (this.preset.oscillatorType2) {
+        osc2 = this.ctx.createOscillator()
+        osc2.type = this.preset.oscillatorType2
+        osc2.frequency.value = baseFrequency
+        osc2.detune.value = voiceDetune * 0.98 // Slightly different for richness
+      }
+
+      // Create gain and panner for this voice
+      const voiceGain = this.ctx.createGain()
+      const voicePanner = this.ctx.createStereoPanner()
+
+      // Reduce volume per voice to prevent clipping
+      voiceGain.gain.value = 1 / Math.sqrt(unisonCount)
+      voicePanner.pan.value = Math.max(-1, Math.min(1, pan))
+
+      this.unisonVoices.push({
+        oscillator1: osc1,
+        oscillator2: osc2,
+        gain: voiceGain,
+        panner: voicePanner
+      })
     }
 
     // === NOISE ===
@@ -238,29 +281,49 @@ export class AdvancedSynthVoice {
       delayWet.connect(this.output)
     }
 
-    // Reverb
+    // Professional Convolution Reverb
     if (this.preset.reverb?.enabled) {
       this.reverbNode = this.ctx.createConvolver()
-      this.reverbNode.buffer = await this.createSimpleReverb()
+      this.reverbNode.buffer = await this.createProfessionalReverb()
 
       const reverbWet = this.ctx.createGain()
       reverbWet.gain.value = this.preset.reverb.wet
 
+      const reverbDry = this.ctx.createGain()
+      reverbDry.gain.value = 1 - this.preset.reverb.wet
+
       this.reverbNode.connect(reverbWet)
       reverbWet.connect(this.output)
+
+      console.log(`🎵 Professional Reverb: Wet ${(this.preset.reverb.wet * 100).toFixed(0)}%`)
     }
 
     // === AUDIO GRAPH CONNECTION ===
-    let currentNode: AudioNode = this.ampGain
+    // Create unison mixer (combines all voices)
+    const unisonMixer = this.ctx.createGain()
+    unisonMixer.gain.value = 1.0
 
-    // Connect oscillators
-    this.oscillator1.connect(this.ampGain)
-    if (this.oscillator2) {
-      this.oscillator2.connect(this.ampGain)
-    }
+    // Connect each unison voice
+    this.unisonVoices.forEach(voice => {
+      // Connect oscillators to voice gain
+      voice.oscillator1.connect(voice.gain)
+      if (voice.oscillator2) {
+        voice.oscillator2.connect(voice.gain)
+      }
+
+      // Connect voice gain to panner, then to mixer
+      voice.gain.connect(voice.panner)
+      voice.panner.connect(unisonMixer)
+    })
+
+    // Connect noise
     if (this.noiseGain) {
-      this.noiseGain.connect(this.ampGain)
+      this.noiseGain.connect(unisonMixer)
     }
+
+    // Connect mixer to amp gain
+    unisonMixer.connect(this.ampGain)
+    let currentNode: AudioNode = this.ampGain
 
     // Apply distortion
     if (this.distortion) {
@@ -295,13 +358,21 @@ export class AdvancedSynthVoice {
     }
 
     // === START ===
-    this.oscillator1.start(now)
-    if (this.oscillator2) this.oscillator2.start(now)
+    this.unisonVoices.forEach(voice => {
+      voice.oscillator1.start(now)
+      if (voice.oscillator2) {
+        voice.oscillator2.start(now)
+      }
+    })
     if (this.noiseSource) this.noiseSource.start(now)
 
     // === STOP ===
-    this.oscillator1.stop(endTime)
-    if (this.oscillator2) this.oscillator2.stop(endTime)
+    this.unisonVoices.forEach(voice => {
+      voice.oscillator1.stop(endTime)
+      if (voice.oscillator2) {
+        voice.oscillator2.stop(endTime)
+      }
+    })
     if (this.noiseSource) this.noiseSource.stop(endTime + 1) // Extra time for reverb tail
     if (this.lfo) this.lfo.stop(endTime)
     if (this.chorusNodes) this.chorusNodes.lfo.stop(endTime)

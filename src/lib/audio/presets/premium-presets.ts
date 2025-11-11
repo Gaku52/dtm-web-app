@@ -3,6 +3,87 @@
 
 import { SynthPreset } from './types'
 
+// Wavetable presets (new!)
+const WAVETABLE_PRESETS: SynthPreset[] = [
+  {
+    id: 'wt_supersaw_epic',
+    name: 'WT SuperSaw Epic',
+    category: 'lead',
+    subcategory: 'supersaw',
+    oscillatorType: 'custom' as any, // Will use wavetable
+    wavetableId: 'wt_supersaw',
+    detune: 20,
+    attackTime: 0.05,
+    decayTime: 0.2,
+    sustainLevel: 0.8,
+    releaseTime: 0.5,
+    filterType: 'lowpass',
+    filterCutoff: 4500,
+    filterResonance: 0.7,
+    unison: 8,
+    spread: 1.0,
+    volume: 0.4,
+    reverb: {
+      enabled: true,
+      decay: 2.8,
+      wet: 0.3
+    },
+    tags: ['wavetable', 'epic', 'supersaw', 'edm']
+  },
+  {
+    id: 'wt_vocal_pad',
+    name: 'WT Vocal Pad',
+    category: 'pad',
+    subcategory: 'atmospheric',
+    oscillatorType: 'custom' as any,
+    wavetableId: 'wt_formant_a',
+    attackTime: 1.5,
+    decayTime: 0.5,
+    sustainLevel: 0.85,
+    releaseTime: 2.5,
+    filterType: 'bandpass',
+    filterCutoff: 1800,
+    filterResonance: 0.5,
+    lfo: {
+      waveform: 'sine',
+      rate: 0.2,
+      amount: 0.2,
+      target: 'filterCutoff'
+    },
+    unison: 6,
+    spread: 0.9,
+    volume: 0.3,
+    reverb: {
+      enabled: true,
+      decay: 4.0,
+      wet: 0.6
+    },
+    tags: ['wavetable', 'vocal', 'pad', 'atmospheric']
+  },
+  {
+    id: 'wt_digital_bass',
+    name: 'WT Digital Bass',
+    category: 'bass',
+    subcategory: 'reese',
+    oscillatorType: 'custom' as any,
+    wavetableId: 'wt_digital',
+    octave: -1,
+    detune: 15,
+    attackTime: 0.01,
+    decayTime: 0.15,
+    sustainLevel: 0.9,
+    releaseTime: 0.1,
+    filterType: 'lowpass',
+    filterCutoff: 800,
+    filterResonance: 0.7,
+    unison: 4,
+    spread: 0.6,
+    volume: 0.6,
+    distortion: 0.3,
+    tags: ['wavetable', 'bass', 'digital', 'aggressive']
+  },
+]
+
 export const PREMIUM_PRESETS: SynthPreset[] = [
   // ========================================
   // LEAD SYNTH - Epic & Powerful (10)
@@ -1724,8 +1805,14 @@ export const PREMIUM_PRESETS: SynthPreset[] = [
     },
     tags: ['cello', 'strings', 'rich', 'warm']
   },
+
+  // ========================================
+  // WAVETABLE PRESETS (3)
+  // ========================================
+  ...WAVETABLE_PRESETS,
 ]
 
 export const PREMIUM_PRESET_COUNT = PREMIUM_PRESETS.length
 
 console.log(`🎵 Premium Preset Library: ${PREMIUM_PRESET_COUNT} hand-crafted presets`)
+console.log(`   Including ${WAVETABLE_PRESETS.length} wavetable presets!`)

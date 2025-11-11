@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { SynthPreset, getPresetById } from '@/lib/audio/presets'
 import { AdvancedSynthVoice } from '@/lib/audio/advanced-synth-engine'
-import { ToneJsSample, getToneJsSampleById } from '@/lib/audio/samplers/tone-js-library'
+import { getToneJsSampleById } from '@/lib/audio/samplers/tone-js-library'
 import { getToneSampler } from '@/lib/audio/samplers/tone-sampler'
 import * as Tone from 'tone'
 

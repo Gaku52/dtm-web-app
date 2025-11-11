@@ -23,9 +23,10 @@ export interface SynthPreset {
   subcategory: string
 
   // Oscillator
-  oscillatorType: OscillatorType
+  oscillatorType: OscillatorType | 'custom' // 'custom' for wavetables
   oscillatorType2?: OscillatorType // Second oscillator for layering
   oscillatorMix?: number // Mix between osc1 and osc2 (0-1)
+  wavetableId?: string // Wavetable ID (if oscillatorType is 'custom')
   detune?: number // Detune in cents
   octave?: number // Octave shift (-2 to +2)
 

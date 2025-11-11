@@ -1,4 +1,6 @@
 import lamejs from 'lamejs'
+import { getPresetById } from './presets'
+import { AdvancedSynthVoice } from './advanced-synth-engine'
 
 // Types
 export interface Note {
@@ -76,79 +78,62 @@ export async function exportToWav(
 
   if (onProgress) onProgress(10)
 
-  // Create audio for each active track
-  activeTracks.forEach((track, trackIndex) => {
+  console.log('🎵 Exporting with Professional Presets Engine...')
+
+  // Create audio for each active track using AdvancedSynthVoice
+  // Process tracks sequentially to handle async preset loading
+  for (let trackIndex = 0; trackIndex < activeTracks.length; trackIndex++) {
+    const track = activeTracks[trackIndex]
     const trackNotes = activeNotes.filter(n => n.track_id === track.id)
-    if (trackNotes.length === 0) return
+
+    if (trackNotes.length === 0) continue
+
+    const presetId = track.instrument || 'piano_bright_grand'
+    const preset = getPresetById(presetId)
+
+    if (!preset) {
+      console.warn(`❌ Preset not found: ${presetId}, using default`)
+      continue
+    }
+
+    console.log(`🎹 Exporting Track "${track.name}" with preset "${preset.name}"`)
 
     // Create notes for this track
-    trackNotes.forEach(note => {
+    for (const note of trackNotes) {
       // Validate note data
       if (!isFinite(note.note_number) || !isFinite(note.start_time) || !isFinite(note.duration)) {
         console.warn('Skipping invalid note:', note)
-        return
+        continue
       }
 
       if (note.duration <= 0 || note.start_time < 0) {
         console.warn('Skipping note with invalid timing:', note)
-        return
+        continue
       }
 
       const freq = noteNumberToFrequency(note.note_number)
-      const velocity = Math.max(0, Math.min(100, note.velocity || 80)) / 100
-      const trackVolume = Math.max(0, Math.min(100, track.volume || 100)) / 100
+      const velocity = Math.max(0, Math.min(127, note.velocity || 80))
 
       // Validate frequency
       if (!isFinite(freq) || freq <= 0) {
         console.warn('Skipping note with invalid frequency:', note.note_number)
-        return
+        continue
       }
 
-      // Create oscillator for this note
-      const oscillator = offlineContext.createOscillator()
-      const gainNode = offlineContext.createGain()
-
-      oscillator.type = 'sine'
-      oscillator.frequency.value = freq
-
-      // ADSR envelope
-      const attackTime = 0.01
-      const decayTime = 0.1
-      const sustainLevel = 0.7
-      const releaseTime = 0.3
-
-      const startTime = note.start_time
-      const endTime = note.start_time + note.duration
-      const volume = velocity * trackVolume
-
-      // Ensure all time values are valid
-      if (!isFinite(startTime) || !isFinite(endTime) || !isFinite(volume)) {
-        console.warn('Skipping note with invalid parameters')
-        return
+      try {
+        // Use the same AdvancedSynthVoice as playback!
+        const voice = new AdvancedSynthVoice(offlineContext as unknown as AudioContext, preset, freq, velocity)
+        voice.connect(offlineContext.destination)
+        await voice.start(note.start_time, note.duration)
+      } catch (error) {
+        console.error('Error creating voice:', error)
       }
+    }
 
-      // Attack
-      gainNode.gain.setValueAtTime(0, startTime)
-      gainNode.gain.linearRampToValueAtTime(volume, startTime + attackTime)
+    if (onProgress) onProgress(10 + ((trackIndex + 1) / activeTracks.length) * 40)
+  }
 
-      // Decay to sustain
-      gainNode.gain.linearRampToValueAtTime(volume * sustainLevel, startTime + attackTime + decayTime)
-
-      // Sustain (maintain level)
-      gainNode.gain.setValueAtTime(volume * sustainLevel, endTime - releaseTime)
-
-      // Release
-      gainNode.gain.linearRampToValueAtTime(0, endTime)
-
-      oscillator.connect(gainNode)
-      gainNode.connect(offlineContext.destination)
-
-      oscillator.start(startTime)
-      oscillator.stop(endTime)
-    })
-
-    if (onProgress) onProgress(10 + (trackIndex / activeTracks.length) * 40)
-  })
+  console.log('✅ All tracks scheduled for export')
 
   if (onProgress) onProgress(50)
 
@@ -165,14 +150,14 @@ export async function exportToWav(
   return wavBlob
 }
 
-// Export to MP3 format
+// Export to MP3 format (maximum quality)
 export async function exportToMp3(
   tracks: Track[],
   notes: Note[],
   tempo: number,
   options: ExportOptions
 ): Promise<Blob> {
-  const { quality = 192, duration = 60, onProgress } = options
+  const { quality = 320, duration = 60, onProgress } = options
 
   // First render to WAV
   if (onProgress) onProgress(0)
@@ -204,12 +189,12 @@ export async function exportToMp3(
   return mp3Blob
 }
 
-// Convert AudioBuffer to WAV Blob
+// Convert AudioBuffer to WAV Blob (32-bit float for maximum quality)
 function audioBufferToWav(buffer: AudioBuffer): Blob {
   const numberOfChannels = buffer.numberOfChannels
   const sampleRate = buffer.sampleRate
-  const format = 1 // PCM
-  const bitDepth = 16
+  const format = 3 // IEEE Float (32-bit)
+  const bitDepth = 32
 
   const bytesPerSample = bitDepth / 8
   const blockAlign = numberOfChannels * bytesPerSample
@@ -251,12 +236,10 @@ function audioBufferToWav(buffer: AudioBuffer): Blob {
   writeString(view, offset, 'data'); offset += 4
   view.setUint32(offset, dataLength, true); offset += 4
 
-  // Write PCM samples
+  // Write 32-bit float samples (lossless quality)
   for (let i = 0; i < data.length; i++) {
-    const sample = Math.max(-1, Math.min(1, data[i]))
-    const int16 = Math.round(sample < 0 ? sample * 0x8000 : sample * 0x7FFF)
-    view.setInt16(offset, int16, true)
-    offset += 2
+    view.setFloat32(offset, data[i], true)
+    offset += 4
   }
 
   return new Blob([arrayBuffer], { type: 'audio/wav' })
