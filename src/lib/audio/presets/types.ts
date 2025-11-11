@@ -76,6 +76,34 @@ export interface SynthPreset {
     frequency: number // Target frequency (40-60 Hz)
   }
 
+  // Transient Designer (Attack/Sustain shaping)
+  transient?: {
+    enabled: boolean
+    attack: number // -1 to +1 (reduce/boost attack)
+    sustain: number // -1 to +1 (reduce/boost sustain)
+  }
+
+  // Sidechain Compressor (EDM pumping)
+  sidechain?: {
+    enabled: boolean
+    amount: number // 0-1 (compression amount)
+    rate: number // Hz (pumping rate, e.g., 120 BPM = 2 Hz)
+    attack: number // seconds
+    release: number // seconds
+  }
+
+  // Vintage Compressor (1176/LA-2A/SSL)
+  compressor?: {
+    enabled: boolean
+    type: '1176' | 'LA2A' | 'SSL'
+    threshold: number // dB
+    ratio: number
+    attack: number // seconds
+    release: number // seconds
+    makeup: number // dB
+    mix: number // 0-1 (parallel compression)
+  }
+
   // Volume
   volume: number
 

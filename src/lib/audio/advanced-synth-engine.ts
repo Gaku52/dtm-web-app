@@ -8,6 +8,9 @@ import { MoogLadderFilter, type MoogFilterSettings } from './moog-ladder-filter'
 import { TB303Filter, type TB303FilterSettings } from './tb303-filter'
 import { AnalogSaturation, type SaturationSettings } from './analog-saturation'
 import { SubBassEnhancer, type SubBassSettings } from './sub-bass-enhancer'
+import { TransientDesigner, type TransientSettings } from './transient-designer'
+import { SidechainCompressor, type SidechainSettings } from './sidechain-compressor'
+import { VintageCompressor, type VintageCompressorSettings } from './vintage-compressors'
 
 export class AdvancedSynthVoice {
   private ctx: AudioContext
@@ -31,6 +34,9 @@ export class AdvancedSynthVoice {
   private distortion: WaveShaperNode | null = null
   private saturationNode: AnalogSaturation | null = null
   private subBassNode: SubBassEnhancer | null = null
+  private transientDesigner: TransientDesigner | null = null
+  private sidechainCompressor: SidechainCompressor | null = null
+  private vintageCompressor: VintageCompressor | null = null
 
   private ampGain: GainNode
   private filterGain: GainNode
@@ -380,10 +386,60 @@ export class AdvancedSynthVoice {
       console.log('🔊 Sub-Bass Enhancement enabled')
     }
 
+    // Apply transient designer (shape attack/sustain)
+    if (this.preset.transient?.enabled) {
+      const transientSettings: TransientSettings = {
+        attackGain: this.preset.transient.attack || 0,
+        attackTime: 0.005,
+        sustainGain: this.preset.transient.sustain || 0,
+        sustainTime: 0.05,
+        lookahead: 0.001,
+        mix: 1.0
+      }
+      this.transientDesigner = new TransientDesigner(this.ctx, transientSettings)
+      currentNode.connect(this.transientDesigner.getInput())
+      currentNode = this.transientDesigner.getOutput()
+      console.log('⚡ Transient Designer enabled')
+    }
+
     // Apply distortion
     if (this.distortion) {
       currentNode.connect(this.distortion)
       currentNode = this.distortion
+    }
+
+    // Apply vintage compressor (1176/LA-2A/SSL)
+    if (this.preset.compressor?.enabled) {
+      const compSettings: VintageCompressorSettings = {
+        type: this.preset.compressor.type,
+        input: 0,
+        threshold: this.preset.compressor.threshold || -20,
+        ratio: this.preset.compressor.ratio || 4,
+        attack: this.preset.compressor.attack || 0.005,
+        release: this.preset.compressor.release || 0.1,
+        output: 1.0,
+        mix: this.preset.compressor.mix || 1.0
+      }
+      this.vintageCompressor = new VintageCompressor(this.ctx, compSettings)
+      currentNode.connect(this.vintageCompressor.getInput())
+      currentNode = this.vintageCompressor.getOutput()
+      console.log(`🎛️ ${this.preset.compressor.type} Compressor enabled`)
+    }
+
+    // Apply sidechain compressor (EDM pumping)
+    if (this.preset.sidechain?.enabled) {
+      const sidechainSettings: SidechainSettings = {
+        threshold: -20,
+        ratio: 8,
+        attack: this.preset.sidechain.attack || 0.001,
+        release: this.preset.sidechain.release || 0.2,
+        duckAmount: this.preset.sidechain.amount || 0.7,
+        mix: 1.0
+      }
+      this.sidechainCompressor = new SidechainCompressor(this.ctx, sidechainSettings)
+      currentNode.connect(this.sidechainCompressor.getInput())
+      currentNode = this.sidechainCompressor.getOutput()
+      console.log('🔊 Sidechain Compressor enabled (EDM pump)')
     }
 
     // Apply analog saturation (after distortion for warmth)
