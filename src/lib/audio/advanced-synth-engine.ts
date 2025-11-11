@@ -4,6 +4,10 @@
 import { SynthPreset } from './presets/types'
 import { loadImpulseResponse, getDefaultIR } from './ir-library'
 import { getWavetableById, createPeriodicWave } from './wavetable-library'
+import { MoogLadderFilter, type MoogFilterSettings } from './moog-ladder-filter'
+import { TB303Filter, type TB303FilterSettings } from './tb303-filter'
+import { AnalogSaturation, type SaturationSettings } from './analog-saturation'
+import { SubBassEnhancer, type SubBassSettings } from './sub-bass-enhancer'
 
 export class AdvancedSynthVoice {
   private ctx: AudioContext
@@ -22,7 +26,11 @@ export class AdvancedSynthVoice {
   private noiseBuffer: AudioBuffer | null = null
 
   private filter: BiquadFilterNode | null = null
+  private moogFilter: MoogLadderFilter | null = null
+  private tb303Filter: TB303Filter | null = null
   private distortion: WaveShaperNode | null = null
+  private saturationNode: AnalogSaturation | null = null
+  private subBassNode: SubBassEnhancer | null = null
 
   private ampGain: GainNode
   private filterGain: GainNode
@@ -173,13 +181,41 @@ export class AdvancedSynthVoice {
 
     // === FILTER ===
     if (this.preset.filterCutoff) {
-      this.filter = this.ctx.createBiquadFilter()
-      this.filter.type = this.preset.filterType || 'lowpass'
-      this.filter.frequency.value = this.preset.filterCutoff
-      this.filter.Q.value = (this.preset.filterResonance || 0) * 30
+      const filterType = this.preset.filterType || 'lowpass'
 
-      // Filter envelope
-      if (this.preset.filterEnvAmount) {
+      if (filterType === 'moog') {
+        // Moog Ladder Filter (House/Deep Bass)
+        const moogSettings: MoogFilterSettings = {
+          cutoff: this.preset.filterCutoff,
+          resonance: this.preset.filterResonance || 0.5,
+          drive: this.preset.filterDrive || 0.3,
+          outputLevel: 0.9
+        }
+        this.moogFilter = new MoogLadderFilter(this.ctx, moogSettings)
+        console.log('🎛️ Using Moog Ladder Filter')
+      } else if (filterType === 'tb303') {
+        // TB-303 Filter (Acid Bass)
+        const tb303Settings: TB303FilterSettings = {
+          cutoff: this.preset.filterCutoff,
+          resonance: this.preset.filterResonance || 0.7,
+          envMod: this.preset.filterEnvAmount || 0.5,
+          decay: this.preset.filterDecay || 0.2,
+          accent: this.preset.filterAccent || 0.5,
+          overdrive: this.preset.filterDrive || 0.4,
+          volume: 0.9
+        }
+        this.tb303Filter = new TB303Filter(this.ctx, tb303Settings)
+        console.log('🎛️ Using TB-303 Filter')
+      } else {
+        // Standard BiquadFilter
+        this.filter = this.ctx.createBiquadFilter()
+        this.filter.type = filterType
+        this.filter.frequency.value = this.preset.filterCutoff
+        this.filter.Q.value = (this.preset.filterResonance || 0) * 30
+      }
+
+      // Filter envelope (only for BiquadFilter, Moog/TB-303 have built-in envelopes)
+      if (this.filter && this.preset.filterEnvAmount) {
         const filterAttack = this.preset.filterAttack || this.preset.attackTime
         const filterDecay = this.preset.filterDecay || this.preset.decayTime
         const filterSustain = this.preset.filterSustain || this.preset.sustainLevel
@@ -325,16 +361,60 @@ export class AdvancedSynthVoice {
     unisonMixer.connect(this.ampGain)
     let currentNode: AudioNode = this.ampGain
 
+    // Apply sub-bass enhancement (before distortion for clean harmonics)
+    if (this.preset.subBass?.enabled) {
+      const subBassSettings: SubBassSettings = {
+        lowCutoff: 20,
+        highCutoff: this.preset.subBass.frequency || 60,
+        amount: this.preset.subBass.amount || 0.5,
+        harmonics: 0.3,
+        octaveDown: 0.2,
+        saturation: 0.2,
+        mono: true,
+        mix: 0.5,
+        outputGain: 1.0
+      }
+      this.subBassNode = new SubBassEnhancer(this.ctx, subBassSettings)
+      currentNode.connect(this.subBassNode.getInput())
+      currentNode = this.subBassNode.getOutput()
+      console.log('🔊 Sub-Bass Enhancement enabled')
+    }
+
     // Apply distortion
     if (this.distortion) {
-      this.ampGain.connect(this.distortion)
+      currentNode.connect(this.distortion)
       currentNode = this.distortion
     }
 
-    // Apply filter
+    // Apply analog saturation (after distortion for warmth)
+    if (this.preset.saturation?.enabled) {
+      const saturationSettings: SaturationSettings = {
+        type: this.preset.saturation.type,
+        drive: this.preset.saturation.drive || 0.5,
+        mix: this.preset.saturation.mix || 1.0,
+        tone: 0,
+        outputGain: 1.0
+      }
+      this.saturationNode = new AnalogSaturation(this.ctx, saturationSettings)
+      currentNode.connect(this.saturationNode.getInput())
+      currentNode = this.saturationNode.getOutput()
+      console.log(`🎚️ Analog Saturation enabled (${this.preset.saturation.type})`)
+    }
+
+    // Apply filter (standard, Moog, or TB-303)
     if (this.filter) {
       currentNode.connect(this.filter)
       currentNode = this.filter
+    } else if (this.moogFilter) {
+      currentNode.connect(this.moogFilter.getInput())
+      currentNode = this.moogFilter.getOutput()
+    } else if (this.tb303Filter) {
+      currentNode.connect(this.tb303Filter.getInput())
+      // TB-303 envelope trigger
+      if (this.preset.filterEnvAmount) {
+        this.tb303Filter.triggerEnvelope(now, this.velocity / 127)
+      }
+      currentNode = this.tb303Filter.getOutput()
     }
 
     // Apply chorus

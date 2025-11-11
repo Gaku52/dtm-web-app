@@ -148,7 +148,7 @@ export class KickSynth {
     this.settings = settings
   }
 
-  private createDistortionCurve(amount: number): Float32Array | null {
+  private createDistortionCurve(amount: number): Float32Array<ArrayBuffer> | null {
     const samples = 256
     const curve = new Float32Array(samples)
     const deg = Math.PI / 180
@@ -158,7 +158,7 @@ export class KickSynth {
       curve[i] = (3 + amount * 100) * x * 20 * deg / (Math.PI + amount * 100 * Math.abs(x))
     }
 
-    return curve
+    return curve as Float32Array<ArrayBuffer>
   }
 
   async play(startTime: number, destination: AudioNode) {

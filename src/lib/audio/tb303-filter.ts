@@ -190,7 +190,7 @@ export class TB303Filter {
    * Create TB-303 style overdrive curve
    * TB-303 has characteristic soft clipping
    */
-  private createOverdriveCurve(amount: number): Float32Array {
+  private createOverdriveCurve(amount: number): Float32Array<ArrayBuffer> {
     const samples = 2048
     const curve = new Float32Array(samples)
 
@@ -206,7 +206,7 @@ export class TB303Filter {
       }
     }
 
-    return curve
+    return curve as Float32Array<ArrayBuffer>
   }
 
   /**

@@ -257,7 +257,7 @@ export class MasteringChain {
    * Create harmonic exciter curve
    * Adds subtle even harmonics for presence
    */
-  private createExciterCurve(amount: number): Float32Array {
+  private createExciterCurve(amount: number): Float32Array<ArrayBuffer> {
     const samples = 4096
     const curve = new Float32Array(samples)
 
@@ -277,7 +277,7 @@ export class MasteringChain {
       curve[i] = curve[i] / max * 0.95
     }
 
-    return curve
+    return curve as Float32Array<ArrayBuffer>
   }
 
   /**

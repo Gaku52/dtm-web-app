@@ -287,7 +287,7 @@ export class VintageCompressor {
     }
   }
 
-  private createSaturationCurve(type: CompressorType): Float32Array {
+  private createSaturationCurve(type: CompressorType): Float32Array<ArrayBuffer> {
     const samples = 4096
     const curve = new Float32Array(samples)
 
@@ -319,7 +319,7 @@ export class VintageCompressor {
       curve[i] = curve[i] / max * 0.98
     }
 
-    return curve
+    return curve as Float32Array<ArrayBuffer>
   }
 
   private dbToGain(db: number): number {

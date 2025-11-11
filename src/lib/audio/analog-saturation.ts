@@ -206,7 +206,7 @@ export class AnalogSaturation {
   /**
    * Create authentic saturation curves
    */
-  private createSaturationCurve(type: SaturationType, drive: number): Float32Array | null {
+  private createSaturationCurve(type: SaturationType, drive: number): Float32Array<ArrayBuffer> | null {
     const samples = 8192  // High resolution
     const curve = new Float32Array(samples)
 
@@ -248,7 +248,7 @@ export class AnalogSaturation {
       curve[i] = curve[i] / max * 0.95
     }
 
-    return curve
+    return curve as Float32Array<ArrayBuffer>
   }
 
   /**

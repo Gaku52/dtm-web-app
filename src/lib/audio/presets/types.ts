@@ -37,10 +37,14 @@ export interface SynthPreset {
   releaseTime: number
 
   // Filter
-  filterType?: 'lowpass' | 'highpass' | 'bandpass' | 'notch'
+  filterType?: 'lowpass' | 'highpass' | 'bandpass' | 'notch' | 'moog' | 'tb303'
   filterCutoff?: number // Hz
   filterResonance?: number // 0-1
   filterEnvAmount?: number // Filter envelope amount
+
+  // Advanced Filters (Moog/TB-303)
+  filterDrive?: number // Drive/saturation for Moog/TB-303 (0-1)
+  filterAccent?: number // Accent for TB-303 (0-1)
 
   // Filter Envelope (separate from amp envelope)
   filterAttack?: number
@@ -56,6 +60,21 @@ export interface SynthPreset {
 
   // Distortion/Waveshaping
   distortion?: number // 0-1
+
+  // Analog Saturation (tape/tube/transformer)
+  saturation?: {
+    enabled: boolean
+    type: 'tape' | 'tube' | 'transformer'
+    drive: number // 0-1
+    mix: number // 0-1
+  }
+
+  // Sub-Bass Enhancement
+  subBass?: {
+    enabled: boolean
+    amount: number // 0-1
+    frequency: number // Target frequency (40-60 Hz)
+  }
 
   // Volume
   volume: number

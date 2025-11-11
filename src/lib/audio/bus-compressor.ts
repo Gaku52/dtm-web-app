@@ -180,7 +180,7 @@ export class BusCompressor {
    * SSL-style subtle saturation
    * Adds 2nd harmonic for glue and warmth
    */
-  private createSSLSaturation(): Float32Array {
+  private createSSLSaturation(): Float32Array<ArrayBuffer> {
     const samples = 4096
     const curve = new Float32Array(samples)
 
@@ -194,7 +194,7 @@ export class BusCompressor {
       curve[i] = (base + h2) / 1.05
     }
 
-    return curve
+    return curve as Float32Array<ArrayBuffer>
   }
 
   private dbToGain(db: number): number {

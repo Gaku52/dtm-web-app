@@ -223,7 +223,7 @@ export class SubBassEnhancer {
    * Create high-quality harmonic generation curve
    * Adds 2nd harmonic for presence without muddiness
    */
-  private createHarmonicCurve(amount: number): Float32Array {
+  private createHarmonicCurve(amount: number): Float32Array<ArrayBuffer> {
     const samples = 4096 // High resolution for quality
     const curve = new Float32Array(samples)
 
@@ -245,14 +245,14 @@ export class SubBassEnhancer {
       curve[i] = curve[i] / max * 0.95
     }
 
-    return curve
+    return curve as Float32Array<ArrayBuffer>
   }
 
   /**
    * Create gentle saturation curve for warmth
    * Uses soft-knee compression and soft clipping
    */
-  private createSaturationCurve(amount: number): Float32Array {
+  private createSaturationCurve(amount: number): Float32Array<ArrayBuffer> {
     const samples = 4096
     const curve = new Float32Array(samples)
 
@@ -264,7 +264,7 @@ export class SubBassEnhancer {
       curve[i] = Math.tanh(x * drive) / Math.tanh(drive)
     }
 
-    return curve
+    return curve as Float32Array<ArrayBuffer>
   }
 
   /**

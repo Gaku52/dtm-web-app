@@ -218,7 +218,7 @@ export class ProLimiter {
    * Create soft clip curve for analog-style limiting
    * Uses soft knee and smooth saturation
    */
-  private createSoftClipCurve(): Float32Array {
+  private createSoftClipCurve(): Float32Array<ArrayBuffer> {
     const samples = 8192  // High resolution for quality
     const curve = new Float32Array(samples)
 
@@ -230,7 +230,7 @@ export class ProLimiter {
       curve[i] = (2 / Math.PI) * Math.atan(x * 2)
     }
 
-    return curve
+    return curve as Float32Array<ArrayBuffer>
   }
 
   /**

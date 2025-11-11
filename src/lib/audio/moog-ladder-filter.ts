@@ -154,7 +154,7 @@ export class MoogLadderFilter {
   /**
    * Create soft saturation curve for analog warmth
    */
-  private createSaturationCurve(amount: number): Float32Array {
+  private createSaturationCurve(amount: number): Float32Array<ArrayBuffer> {
     const samples = 2048
     const curve = new Float32Array(samples)
     const deg = Math.PI / 180
@@ -167,7 +167,7 @@ export class MoogLadderFilter {
       curve[i] = Math.tanh(x * drive) / Math.tanh(drive)
     }
 
-    return curve
+    return curve as Float32Array<ArrayBuffer>
   }
 
   /**
